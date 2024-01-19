@@ -1,0 +1,348 @@
+---
+title: "WILD 7970 - SpatialEcology - Lab1"
+author: "Stephen J. Zenas"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: "yeti"
+    toc: true
+    number_sections: true
+    toc:float: 
+      collaped: false
+      smooth_scroll: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Import Libraries
+require(tidyverse)
+require(sf)
+require(tigris)
+require(geodata)
+require(terra)
+require(colorspace)
+require(tidyterra)
+require(ggnewscale)
+require(cowplot)
+require(sp)
+require(raster)
+require(ggspatial)
+
+```
+
+# **Assignment**
+Build a fully reproducible map of something relevant to you (e.g., your study site) using R Markdown and GitHub. Upload your R Markdown file to GitHub and provide the link. 
+
+## Deliverables
+  - Zoomed-in Map
+    - Vector data
+    - Raster data
+    - additional vector or raster data
+  - Zoomed-out Map
+    - Extent rectangle
+  - Interpretable legend
+  - Fully reproducable
+  - Short summary paragraph
+    - background about the study and the study area being mapped
+    - information on where the spatial elements in the map were obtained
+  - Neatness
+  - BONUS: include a scale bar and North arrow within the final figure
+
+
+# **Step #1: Import and Modify Data**
+
+## Import Data (.csv)
+
+Data in '.csv' format are added to the work space using the 'read.csv()' function. The files containes some junk text in the first column name, so in included an additional argument - 'fileEncoding = "UTF-8-BOM"' - to ensure that the unnecessary text is removed from the column header 
+
+```{r Vector 1 - import data (.csv)}
+
+study = read.csv("boundVert_wgs1984.csv",fileEncoding = "UTF-8-BOM")
+
+# preview data
+head(study) 
+
+```
+The process was repeated for the second '.csv' file.
+
+```{r Vector 2 - import data (.csv)}
+
+cams = read.csv("cameras_WGS1984.csv",fileEncoding = "UTF-8-BOM")
+
+# preview data
+head(cams)
+
+```
+Both files contain columns corresponding to longitude(X) and latitude(Y).
+
+
+## Import Data (.tif)
+
+Importing raster data is simple with the 'terra' package. All that was required was to call the "rast()" function. I verified that the object I created was a spatial object by calling the 'class()' function and returning the first value.
+
+```{r Raster 1 - import data (.tif), warning=FALSE}
+
+elev = rast('topo_WGS1984.tif')
+
+#verify the data type as SpatRaster
+class(elev)[1] 
+
+```
+
+# **Step #2: Convert data to spatial objects**
+
+## Vector 1 - Convert non-spatial points to spatial polygon
+
+Currently, the data I have imported from the 'study' file lacks spatial information. They are just sets of recorded coordinates. in the following steps, I:
+
+  1. verified that the data set was circular (*the first and last points are the same*)
+  2. extracted the columns containing X and Y data
+  3. combined them in a polygon geometry
+  4. Used the 'SpatialPolygons' function in the`r find("SpatialPolygons")` to convert the polygon to a spatial polygon
+  5. Set the projection
+  6. Used the 'st_as_sf' function to convert the spatial polygon to a 'sf' feature. 
+
+
+```{r convert boundary points to sf, warning=FALSE}
+# verify that the first row hasn't already been duplicated
+if(study[1,1] != study[nrow(study),1] & study[1,2] != study[nrow(study),2])
+{
+ study = study %>% add_row(study[1,]) 
+}
+
+# Extract the coordinate values
+study.Xcoords = study$X
+study.Ycoords = study$Y
+
+# Combine the coordinates into a polygon, then define it as a spatial polygon
+pgon = Polygon(cbind(study.Xcoords,study.Ycoords))
+pgons = Polygons(list(pgon),1)
+spgons = SpatialPolygons(list(pgons))
+
+# set the projection for the spatial polygon
+# epsg:4326 corresponds to lat/long data in the WGS1984 datum
+proj4string(spgons) = CRS('+init=epsg:4326')
+
+# Define the object as a spatial feature and assign to appropriate object
+study.spatial = st_as_sf(spgons)
+
+# Preview the feature
+ggplot()+
+  geom_sf(data = study.spatial, color = 'red', linewidth = 1.5, fill = NA)
+```
+
+## Vector 2 - Create Spatial Points from coordinates in .csv file
+
+Converting the camera locations to sf objects was simpler. I was able to call the 'st_as_sf' function to produce a 'sf' object.
+
+```{r convert camera locations to sf points}
+cams.spatial = st_as_sf(cams, coords=c("X","Y"),crs = 'epsg:4326')
+
+# Visualize the feature spatial. Red items indicate new additions to the map.
+
+ggplot()+
+  geom_sf(data = study.spatial, fill = NA, color = 'black', linewidth = 1)+
+  geom_sf(data = cams.spatial, color = 'red', size = 3)
+
+
+```
+
+## Create Extent Box from study site boundary file
+
+The extent box is based on the study site boundary 'sf' object. I began by extracting the bounding box from the study site 'sf' object, then added '0.001' degrees to each of the X and Y min/max values. Lastly, I converted the coordinates to a 'sf' object.
+
+```{r define extent box, warning=FALSE}
+# Define the 'extent' box
+extent = st_bbox(study.spatial)
+new.extent = extent + c(-.001,-.001,.001,.001)
+extent.spatial = st_as_sfc(new.extent)
+
+# View data
+ggplot()+
+  geom_sf(data = study.spatial, fill = NA, color = 'black', linewidth = 1)+
+  geom_sf(data = cams.spatial, color = 'black', size = 3)+
+  geom_sf(data = extent.spatial, fill = NA, color = 'red', linewidth = 1.5)
+
+```
+
+
+## Display raster data
+
+The raster data was converted to a 'spatRaster' when it was imported, so no additional steps were needed. 
+
+```{r display raster data, message=FALSE}
+# Raster data is already spatial when imported with 'terra
+
+# visualize the raster spatially
+ggplot()+
+  geom_spatraster(data = elev)+
+  geom_sf(data = study.spatial, fill = NA, color = 'black', linewidth = 1)+
+  geom_sf(data = extent.spatial, fill = NA, color = 'black', linewidth = 1)+
+  geom_sf(data = cams.spatial, color = 'black', size = 2)
+  
+
+```
+
+## Crop Raster to extent window
+
+The raster was a little too large for my map, so I cropped the raster to the study extent window I created in the last step.
+
+```{r crop raster}
+elevcrop = crop(elev, extent.spatial)
+
+# visualize crop
+ggplot()+
+  geom_spatraster(data = elevcrop)+
+  geom_sf(data = study.spatial, fill = NA, color = 'black', linewidth = 1)+
+  geom_sf(data = extent.spatial, fill = NA, color = 'black', linewidth = 1)+
+  geom_sf(data = cams.spatial, color = 'black', size = 2)
+
+
+
+```
+
+## Import Macon county, AL shapefile
+
+For my zoomed out map, I chose to use the Macon County,AL extent. The .shp for Macon county was retrieved from the 'geodata' package. I filtered all the the counties by the FIPS code (01087). The first two digits of the FIPS code (01###) correspond to the state FIPS code for Alabama. The last three digits (##087) are the unique identifier for Macon County. 
+
+The resulting object is not in the appropriate datum, so I projected the Macon County shapefile to the same datum as my study boundary 'sf' object.
+
+```{r Macon County, AL shapefile, results='hide'}
+# Specified results = 'hide to eliminate unnecessary messaging from geodata  function 
+macon.NAD = counties() %>% filter(GEOID == '01087')
+macon = st_transform(macon.NAD,st_crs(study.spatial))
+
+```
+
+Verification of the projection:
+
+```{r verify projection to appropriate datum}
+
+print(paste("Before Projection: ",crs(macon.NAD, proj = T)))
+print(paste("After Projection: ",crs(macon, proj = T)))
+
+```
+
+## Visualize Macon County .shp
+```{r visualize Macon County with extent window}
+ggplot()+
+  geom_sf(data = macon, fill = NA, color = 'red', linewidth = 1.5)+
+  geom_sf(data = extent.spatial, fill = NA, color = 'black', linewidth = 1)
+
+```
+
+
+# **Step #3: Compile map elements**
+
+## Create zoomed out map
+
+```{r create zoomed out map}
+zo = ggplot()+
+  # add Macon County polygon
+  geom_sf(data = macon, color = 'black', fill = NA, linewidth = 1)+
+  # add study extent polygon
+  geom_sf(data = extent.spatial, color = 'red', fill = NA, linewidth = 1)+
+  # add title
+  ggtitle('Macon County, AL')+
+  # set theme parameters
+  theme_bw()+
+  theme(
+    plot.title = element_text(hjust = 0.5,size = 14,face = 'bold'),
+    panel.grid = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    panel.border = element_blank())
+zo
+```
+
+```{r create zoomed in map}
+zi = ggplot()+
+  # add title
+  ggtitle("Wyncreek Plantation")+
+  # add raster feature
+  geom_spatraster(data = elevcrop)+
+  # set the color scale, and lable the variable as elevation
+  scale_fill_gradient(low = 'grey15',high = 'grey', na.value = NA, labs(fill = 'Elevation'))
+
+zi = zi+
+  # aes(color = "Extent") allows me to specify colors manually for each element
+  # show.legend = 'line' allows me to specify the geometry type in the legend
+  # add the extent boundary
+  geom_sf(data = extent.spatial, fill = NA, linewidth = 1,aes(color = 'Extent'),show.legend = 'line')+
+  
+  # add the study area boundary
+  geom_sf(data = study.spatial, fill = NA, linewidth = 1,aes(color = 'Boundary'),show.legend = 'line')+
+  
+  # add the camera locations
+  geom_sf(data = cams.spatial, size = 2, aes(color = "Cameras"),show.legend = 'point')+
+
+  # change the color and geometry type
+  scale_color_manual(values = c("Extent" = 'red',"Boundary" = 'black', "Cameras" = 'orange'),
+                     guide = guide_legend(override.aes = list(
+                       linetype = c('solid','blank','solid'),
+                       shape = c(NA,16,NA))))+
+  
+  # modify the legend title
+  labs(color='Features')+
+  
+  # theme parameters
+  theme_bw()+
+  theme(panel.grid=element_blank(), #Removes the gridlines
+        axis.text=element_blank(), #Removes the axis text
+        axis.ticks=element_blank(), #Removes the axis tick marks
+        plot.title = element_text(hjust = 0.5,size = 14,face = 'bold'),
+        panel.border=element_blank())+ #Removes the frame around the graph
+  theme(legend.box.background = element_rect(color = 'black'),
+        legend.background = element_blank(),
+        legend.margin = margin(t = 5, r = 5, b = 5, l = 5, unit='pt'))+
+  
+  # Adding North Arrow and Scale bar
+  annotation_scale(location = 'br',pad_x = unit(1,'cm'),pad_y = unit(1,'cm'),aes(text_col = 'white',line_col = 'white'))+
+  annotation_north_arrow(location = 'tr', which_north = 'true',pad_x = unit(1,'cm'),pad_y = unit(1,'cm'), style = north_arrow_fancy_orienteering(text_col = 'white'))
+
+zi
+
+```
+
+
+# **Step #4: Produce final map**
+
+The final map was compiled with 'cowplot'. I created a left panel which containes the zoomed out view and the legend. Additionally, I created a right panel which contains the zoomed in map element.
+
+```{r combine the plots}
+# Extract the Legend
+ledge = get_legend(zi)
+
+# Create duplicate zoomed in map, excluding the legend
+zi_no_legend = zi + theme(legend.position = 'none')
+
+# Specify the features that will go in the left panel
+left.Panel = plot_grid(zo,ledge,ncol = 1,rel_heights = c(1,2))
+
+# Specify the features that will go in the right panel
+right.Panel = plot_grid(zi_no_legend)
+
+# Combine panels to create file output
+full.Map = plot_grid(left.Panel,right.Panel, rel_widths = c(1,2),align = 'hv')
+
+# Visualize final map product
+full.Map
+```
+
+# **Step #5: Summary of Map and Data Files**
+The data used for this lab assignment came from two sources. First, The locational data for the boundary came from me. the camera locations were recorded during wild pig surveys, again collected by me. lastly, the elevation data was retrieved from the USGS data download portal. It represents a D.E.M collected at the 1mx1m resolution.
+
+
+ 
+ 
+
+
+
+
+
+
+
+
+
+
