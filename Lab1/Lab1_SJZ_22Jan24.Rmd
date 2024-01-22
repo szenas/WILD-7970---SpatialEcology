@@ -342,7 +342,7 @@ full.Map
 ```
 
 # **Step #5: Summary of Map and Data Files**
-The data for this assignment was collected during a research project funded by the USDA-Wildlife Services. The primary objective was to estimating changes in white-tailed deer and wild turkey demographic rates after the implementation of a whole-sounder removal trapping program. Specifically, the camera locations represent baited sites used to estimate wild pig abundance and density across the study site. Location for each of the cameras was recorded by field staff via Avenza PDF mapping software when the cameras were deployed. The study site boundary was drawn in ArcGIS Pro utilizing the Macon County, Alabama online GIS portal and knowledge of Plantation staff. The 'elev' layer represents a D.E.M layer provided by the USGS. It is measured at a 1m x 1m resolution. 
+The data for this assignment was collected during a research project funded by the USDA-Wildlife Services. The primary objective was to estimating changes in white-tailed deer and wild turkey demographic rates after the implementation of a whole-sounder removal trapping program. Specifically, the camera locations represent baited sites used to estimate wild pig abundance and density across the study site. Location for each of the cameras was recorded by field staff via Avenza PDF mapping software when the cameras were deployed. The study site boundary was drawn in ArcGIS Pro utilizing the Macon County, Alabama online GIS portal and knowledge of Plantation staff. The 'elev' layer represents a D.E.M layer , recorded at a 30 second resolution, provided by the geodata function. 
 
 For the purpose of this assignment, I elected to export the polygon vertices from Arc and recreate the study site boundary in R. 
 
