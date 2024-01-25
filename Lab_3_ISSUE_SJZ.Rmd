@@ -1,0 +1,94 @@
+---
+title: "BufferIssue_SJZ"
+author: "Stephen J. Zenas"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+require(tidyverse)
+require(sf)
+require(terra)
+require(FedData)
+require(tidyterra)
+
+
+```
+
+```{r}
+# import the sites file
+sites = st_read("/vsicurl/https://github.com/ValenteJJ/SpatialEcology/raw/main/Week3/reptiledata.shp") %>% 
+  filter(management!='Corn')
+
+# set the coordinate reference system
+st_crs(sites) = "+proj=aea +lat_0=23 +lon_0=-96 +lat_1=29.5 +lat_2=45.5 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
+
+presAbs = read.csv('https://raw.githubusercontent.com/ValenteJJ/SpatialEcology/main/Week3/reptiles_flsk.csv')
+
+# Join the datatables based on the site
+sites = sites %>% 
+  left_join(presAbs, by='site')
+
+# Get the study area extent
+studyArea = st_bbox(sites)+ c(-10000,-10000,10000,10000)
+studyArea = st_as_sfc(studyArea)
+
+
+# Get NLCD data, "cropped" by study area extent bbox
+nlcd = get_nlcd(studyArea,label = 'StudyArea',year = 2016,
+                dataset = 'landcover',
+                landmass = 'L48')
+
+# Reclassify the NLCD raster to just include "forest"
+forest = nlcd %>% 
+  setValues(0)
+
+forest[nlcd=='Deciduous Forest' | nlcd=='Evergreen Forest' |
+         nlcd=='Mixed Forest'] = 1
+
+# Pulled out the first site - to demostrate issue
+site1 = sites[1,]
+
+
+#Calculate the area of the buffer (HA)
+buffArea = (pi*100^2)/10000
+
+# Calculate the area of each grain (HA)
+grainArea = (prod(res(forest)))/10000
+
+# Buffer Site - 100m  
+buff = st_buffer(site1, dist=100)
+```
+
+# ISSUE BELOW
+
+```{r}
+
+#> I believe that the green raster cells that are outside the
+#> buffer are being included in the forested cell count.
+cropBuff = crop(forest, buff, mask=T)
+
+#> number of cells forested. only cells complete outside of the
+#> buffer are being removed.
+numCells = global(cropBuff, 'sum', na.rm=T)
+
+#> This formula doesn't exclude the portions of the raster cells that
+#> are outside the buffer.
+forestHa = numCells * grainArea
+
+# Proportion of forest
+propForest = forestHa / buffArea
+
+print(paste("Forest HA: ",forestHa, sep = ""))
+print(paste("Buffer HA: ",buffArea, sep = ""))
+
+# Visualize Issue
+ggplot()+
+  geom_spatraster(data = cropBuff)+
+  scale_fill_continuous(low = 'red',high = 'green')+
+  geom_sf(data = buff, color = 'black', fill = NA)+
+  geom_sf(data = site1, color = 'black')
+
+```
