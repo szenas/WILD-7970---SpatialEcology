@@ -1,0 +1,408 @@
+---
+title: "Lab 3 Assignment - Scale"
+output:
+  html_document:
+    df_print: paged
+---
+```{r setup, include=FALSE}
+#import libraries
+require(sf)
+require(AICcmodavg)
+require(tigris)
+require(FedData)
+require(terra)
+require(tidyverse)
+require(cowplot)
+require(tidyterra)
+
+```
+
+```{r Function Definitions, include = FALSE}
+
+# Aggregates the original raster at the predefined levels of 
+# aggregation. Must specify the function used during aggregation.
+raster.aggregation.summary = function(rasterX,summary.function)
+{
+ rasterX2 = aggregate(rasterX,fact = 2, fun = summary.function)
+ rasterX5 = aggregate(rasterX,fact = 5, fun = summary.function)
+ rasterX10 = aggregate(rasterX,fact = 10, fun = summary.function)
+
+ # small table to report summary statistics for each raster
+ summary.stat.df = data.frame(
+   "GrainSize" = c(1, 2, 5,10),
+  
+   "Mean" = c(global(rasterX, 'mean')[1,1],global(rasterX2, mean)[1,1],
+             global(rasterX5, mean)[1,1],global(rasterX10, mean)[1,1]),
+  
+   "Var" = c(global(rasterX, var)[1,1],global(rasterX2, var)[1,1],
+            global(rasterX5, var)[1,1],global(rasterX10, var)[1,1]),
+  
+   "Min" = c(global(rasterX, min)[1,1],global(rasterX2, min)[1,1],
+            global(rasterX5, min)[1,1],global(rasterX10, min)[1,1]),
+  
+   "Max" = c(global(rasterX, max)[1,1],global(rasterX2, max)[1,1],
+            global(rasterX5, max)[1,1],global(rasterX10, max)[1,1])
+)
+
+# Add range to df with tidyverse and specify digit counts
+ summary.stat.df = summary.stat.df %>% mutate('Range' = abs(Min-Max))
+ summary.stat.df = summary.stat.df %>% mutate('Mean' = round(Mean,2))
+ summary.stat.df = summary.stat.df %>% mutate('Var' = round(Var,2))
+
+
+ summary.stat.df
+
+# Visualize rasters side by side
+r1 = ggplot()+
+  geom_spatraster(data = rasterX)+
+  scale_fill_gradientn(colors = terrain.colors(7))+
+  labs(title = "No Aggregation")+
+  theme(plot.title = element_text(hjust = 0.5,face = 'bold',size = 14))+
+  annotate(geom = 'text', x = 75, y=85,
+           label = paste('Mean: ',summary.stat.df$Mean[1]),
+           color = 'black')+
+  annotate(geom = 'text', x = 75, y=70,
+           label = paste('Var: ',summary.stat.df$Var[1]),
+           color = 'black')+
+  annotate(geom = 'text', x = 75, y=55,
+           label = paste('Range: ',summary.stat.df$Range[1]),
+           color = 'black')
+  
+
+r2 = ggplot()+
+  geom_spatraster(data = rasterX2)+
+  scale_fill_gradientn(colors = terrain.colors(7))+
+  labs(title = "Factor 2 Aggregation")+
+  theme(plot.title = element_text(hjust = 0.5,face = 'bold',size = 14))+
+  annotate(geom = 'text', x = 75, y=85,
+           label = paste('Mean: ',summary.stat.df$Mean[2]),
+           color = 'black')+
+  annotate(geom = 'text', x = 75, y=70,
+           label = paste('Var: ',summary.stat.df$Var[2]),
+           color = 'black')+
+  annotate(geom = 'text', x = 75, y=55,
+           label = paste('Range: ',summary.stat.df$Range[2]),
+           color = 'black')
+
+r5 = ggplot()+
+  geom_spatraster(data = rasterX5)+
+  scale_fill_gradientn(colors = terrain.colors(7))+
+  labs(title = "Factor 5 Aggregation")+
+  theme(plot.title = element_text(hjust = 0.5,face = 'bold',size = 14))+
+  annotate(geom = 'text', x = 75, y=85,
+           label = paste('Mean: ',summary.stat.df$Mean[3]),
+           color = 'black')+
+  annotate(geom = 'text', x = 75, y=70,
+           label = paste('Var: ',summary.stat.df$Var[3]),
+           color = 'black')+
+  annotate(geom = 'text', x = 75, y=55,
+           label = paste('Range: ',summary.stat.df$Range[3]),
+           color = 'black')
+
+r10 = ggplot()+
+  geom_spatraster(data = rasterX10)+
+  scale_fill_gradientn(colors = terrain.colors(7))+
+  labs(title = "Factor 10 Aggregation")+
+  theme(plot.title = element_text(hjust = 0.5,face = 'bold',size = 14))+
+  annotate(geom = 'text', x = 75, y=85,
+           label = paste('Mean: ',summary.stat.df$Mean[4]),
+           color = 'black')+
+  annotate(geom = 'text', x = 75, y=70,
+           label = paste('Var: ',summary.stat.df$Var[4]),
+           color = 'black')+
+  annotate(geom = 'text', x = 75, y=55,
+           label = paste('Range: ',summary.stat.df$Range[4]),
+           color = 'black')
+
+# plot_grid(r1,r2,r5,r10) 
+
+gg.mean = ggplot(data = summary.stat.df,aes(x = GrainSize, y = Mean))+
+  geom_point()+
+  scale_x_continuous(breaks = c(0:11))
+
+gg.var = ggplot(data = summary.stat.df,aes(x = GrainSize, y = Var))+
+  geom_point()+
+  scale_x_continuous(breaks = c(0:11))
+  
+# Combine the plots for easier viewing
+
+pg1 = plot_grid(r1,r2,r5,r10,ncol = 2)
+pg2 = plot_grid(gg.mean, gg.var)
+return(list(pg1,pg2))
+}
+
+# Function: Buffer Cover. Returns the proportion of forest in each
+# buffer.
+bufferCover = function(shp, size, landcover){
+  buffArea = (pi*size^2)/10000
+  grainArea = (prod(res(landcover)))/10000
+  
+  buffi = st_buffer(shp[i,], dist=size)
+  cropi = crop(landcover, buffi, mask=T)
+  numCells = global(cropi, 'sum', na.rm=T)
+  forestHa = numCells * grainArea
+  propForest = forestHa / buffArea
+  
+  # print(paste("B4: ", propForest))
+  if(propForest > 1){
+    propForest = 1
+    }
+  # print(paste('After: ', propForest))
+  
+  return(propForest)
+}
+
+
+
+```
+
+
+## Challenge 1 (4 points)
+
+**Build a raster with 100 rows and 100 columns. Fill the raster cells with values of a random variable drawn from a distribution of your choosing (Poisson, Normal, Uniform, etc.). Calculate the mean and variance of the values in that raster. Now increase the grain size of those cells by factors of 2, 5, and 10, combining cell values using a mean function. At each iteration, calculate the mean and variance of the values in the resulting raster. Generate 2 scatterplots that have grain size on the x-axis. Plot the mean raster value on the y-axis of the first, and variance on the y-axis of the second. What do you notice about how these values change as you "scale up" the grain size? Why do you think this pattern occurs?**
+
+
+```{r Challenge1, warning=FALSE, results=FALSE, echo=FALSE,message=FALSE}
+# create raster
+rasterF1 = rast(ncol = 100,
+                nrow = 100,
+                xmin = 1,
+                xmax = 100,
+                ymin = 1, ymax = 100)
+
+# specify cell values - drawn from Poisson distribution
+rasterF1[] = rpois(ncell(rasterF1),16)
+
+# Calculate summary statistics of base raster
+rasterF1.mean = global(rasterF1, mean)[1,1]
+rasterF1.var = global(rasterF1, var)[1,1]
+
+# print output graphics
+rastAgg.mean = raster.aggregation.summary(rasterF1, "mean")
+rastAgg.mean[1]
+rastAgg.mean[2]
+```
+
+The mean values of the raster stay consistent across all raster aggregation schemes. However, the variance of the rasters appears to decline by almost the same rate with which we factored the original raster layer.
+
+The mean of means is relatively invariant to change, meaning that across all levels of aggregation the mean will remain consistent. However, with regard to the variance, when we aggregate the raster over larger spatial extents, we are in effect 'summarizing' the variation in each of the original values into one. This will reduce the variance of each observation.
+
+In the example I created above, the poisson distribution has a expected mean and variance of 16. When we aggregate the cells by a factor of 2 (4 cells become 1), it makes sense that the new variance would be approximately 1/4th of the original value.
+
+While using the mean summary statistic will not likely influence our estimates, the decreased variance will result in an inflated confidence of those estimates.
+
+
+## Challenge 2 (4 points)
+
+**Identify a situation in which you might use a summary function other than the mean to calculate new cell values when you scale up the grain of a raster (e.g., median, mode, minimum, maximum, etc.). Repeat the effort from Challenge 1 using this alternate function. Again, create two scatterplots showing how the mean and variance values of the raster change as you scale up the cell size by factors of 2, 5, and 10. Do you see a similar pattern? Compare and contrast your findings with those from Challenge 1.**
+
+*Hint: You should be able to recycle your code from Challenge 1 with only a couple of small tweaks to answer this question.*
+
+```{r Challenge2, warning=FALSE}
+# Uses the raster aggregation function produce the outputs.
+# The function is defined in the first code chunk
+
+# Minimum value used in aggregation scheme
+rastAgg.min = raster.aggregation.summary(rasterF1, "min")
+rastAgg.min[1]
+rastAgg.min[2]
+
+# Maximum value used in aggregation scheme
+rastAgg.max = raster.aggregation.summary(rasterF1, "max")
+rastAgg.max[1]
+rastAgg.max[2]
+
+# Most frequent value used in aggregation scheme
+# Unless all values have the same frequency
+# in this case, the lowest value is reported
+rastAgg.mode = raster.aggregation.summary(rasterF1, "modal")
+rastAgg.mode[1]
+rastAgg.mode[2]
+
+```
+
+There could be any number of reasons why someone would be interested in summary statistics other than the mean when aggregating rasters to larger scales. Perhaps it would be most important to understand where the greatest number of positive disease tests occur (*maximum*), or the spatial units where disease sampling is the lowest (*minimum*), or which frequency occurs most over the spatial extent (*modal*). Specification of which summary statistic to use when aggregating data should be directly related to the research question of interest.
+
+The relationship between the variance and grain size is similar across all summary statistics. in the other methods of aggregation (*max, min, modal*). However, The mean values are more variable. This makes sense, because the other summary statistics are more influenced by extreme values or outliers among cells being aggregated. 
+
+
+## Challenge 3 (2 points)
+
+**Recall that before we calculated forest cover, we cropped our NLCD raster to minimize its size and the computing effort necessary from our poor little computers. How might that affect our ability to evaluate the scale at which five-lined skinks respond to forest cover? Why?**
+
+Any spatial analysis that involves aggregation is subject to the modifiable areal unit problem (MAUP). This occurs when the phenomenon we are measuring is dependent on arbitrary spatial units. In this example, I believe that the most relevant MAUP effect would be the 'edge' effect.
+
+Any point that is closer to the edge of the raster file than the furthest focal distance would be subject to edge effects. For example, if we were interested in the proportion of forest within 5km of a sample location, but we were only 1km from the edge of the raster, a substantial portion of the focal area would lack data. 
+
+An easy solution would be to expand the survey location bounding box by the largest focal distance. There would be some trade off in computer performance by including more data, but it would eliminate the edge effect.
+
+## Challenge 4 (4 points)
+
+**In the lab, we measured forest cover at 1 km and 5 km. Extract forest cover proportions around each sample point for 100 m, 500 m, 1 km, 2 km, 3 km, 4 km, and 5 km scales. Examine the correlation between these 7 variables (remember the chart.Correlation() function). What patterns do you notice in correlation among these variables?**
+
+*Hint: Recall the for loop we used to calculate this variable at two scales... could you make a small addition here to look at more scales?*
+
+```{r Skink Responce, warning=FALSE}
+# import the sites file
+sites = st_read("/vsicurl/https://github.com/ValenteJJ/SpatialEcology/raw/main/Week3/reptiledata.shp") %>% 
+  filter(management!='Corn')
+
+# set the coordinate reference system
+st_crs(sites) = "+proj=aea +lat_0=23 +lon_0=-96 +lat_1=29.5 +lat_2=45.5 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
+
+#preview the shapefile
+head(sites)
+
+# filter States data to just the three states with sites
+states = states() %>% 
+  filter(NAME %in% c('Alabama', 'Florida', 'Georgia')) %>% 
+  st_transform(crs(sites, proj=T))
+
+
+# Visualize survey points spatially
+ggplot()+
+  geom_sf(data = states)+
+  geom_sf(data = sites)
+
+# Add presence absence data
+
+presAbs = read.csv('https://raw.githubusercontent.com/ValenteJJ/SpatialEcology/main/Week3/reptiles_flsk.csv')
+
+# preview presence/absence data
+head(presAbs)
+
+# Join the datatables based on the site
+sites = sites %>% 
+  left_join(presAbs, by='site')
+
+# Get the study area extent
+studyArea = st_bbox(sites)+ c(-10000,-10000,10000,10000)
+studyArea = st_as_sfc(studyArea)
+
+# Visualize study area extent
+ggplot()+
+  geom_sf(data = states)+
+  geom_sf(data = sites)+
+  geom_sf(data = studyArea, fill = NA, color = 'red')
+
+# Get NLCD data
+nlcd = get_nlcd(studyArea,label = 'StudyArea',year = 2016, dataset = 'landcover',
+                landmass = 'L48')
+
+plot(nlcd,1,legend = T, plg=list(cex = 0.5))
+plot(st_geometry(sites), add = T, pch = 16, col = 'red')
+
+# Reclassify the NLCD raster to just include "forest'
+forest = nlcd %>% 
+  setValues(0)
+
+forest[nlcd=='Deciduous Forest' | nlcd=='Evergreen Forest' | nlcd=='Mixed Forest'] = 1
+
+# Function to measure prop forest - courtesy of JV
+
+#empty vectors to store data
+bc100m = as.vector(rep(NA, nrow(sites)))
+bc500m = as.vector(rep(NA, nrow(sites)))
+bc1000m = as.vector(rep(NA, nrow(sites)))
+bc2000m = as.vector(rep(NA, nrow(sites)))
+bc3000m = as.vector(rep(NA, nrow(sites)))
+bc4000m = as.vector(rep(NA, nrow(sites)))
+bc5000m = as.vector(rep(NA, nrow(sites)))
+
+
+# for loop to iterate through sites
+for(i in 1:nrow(sites))
+{
+  bc100m[i] = bufferCover(sites, 100, forest)
+  bc500m[i] = bufferCover(sites, 500, forest)
+  bc1000m[i] = bufferCover(sites, 1000, forest)
+  bc2000m[i] = bufferCover(sites, 2000, forest)
+  bc3000m[i] = bufferCover(sites, 3000, forest)
+  bc4000m[i] = bufferCover(sites, 4000, forest)
+  bc5000m[i] = bufferCover(sites, 5000, forest)
+}
+
+forestData = sites %>%
+  mutate(bc100m = unlist(bc100m),
+         bc500m = unlist(bc500m),
+         bc1000m = unlist(bc1000m),
+         bc2000m = unlist(bc2000m),
+         bc3000m = unlist(bc3000m),
+         bc4000m = unlist(bc4000m),
+         bc5000m = unlist(bc5000m))
+
+head(forestData)
+
+# Measure Correlation
+forestData %>% as.data.frame() %>%
+  select(bc100m,bc500m,bc1000m,
+         bc2000m,bc3000m,bc4000m,bc5000m) %>%
+  PerformanceAnalytics::chart.Correlation(histogram = F)
+
+```
+
+There is a statistically significant correlation between many of the focal distances evaluated in this analysis. More specifically, Each focal distance is highly correlated with the next smallest and largest focal distance, indicating that these focal distances are highly related. The strength of association between 2km-5km focal distances are quite high, suggesting that we could use just one in evaluating the trends in Skink presence and forest cover. The association becomes less severe when the spacing of focal distance increases. I would suggest that we could reduce the focal distances evaluated in the analysis to 100m, 500m, 1km, 4km. 
+
+
+## Challenge 5 (4 points)
+
+**Fit 8 logistic regression models (a null model and one for each of the 7 forest scales). Compare these models using AICc. Which scale do you think represents the critical or characteristic scale at which forest cover affects skink presence? Is this scale clearly better than the others, or is there some ambiguity? What are some mechanisms by which forest cover could affect skink presence at this scale? What is your overall conclusion regarding how forest cover affects skink presence (i.e., take a look at the betas)?**
+
+Place your R code in the chunk below.
+```{r}
+modelNull = glm(pres~1, family='binomial', data=forestData)
+model100m = glm(pres~bc100m, family='binomial', data=forestData)
+model500m = glm(pres~bc500m, family='binomial', data=forestData)
+model1km = glm(pres~bc1000m, family='binomial', data=forestData)
+model2km = glm(pres~bc2000m, family='binomial', data=forestData)
+model3km = glm(pres~bc3000m, family='binomial', data=forestData)
+model4km = glm(pres~bc4000m, family='binomial', data=forestData)
+model5km = glm(pres~bc5000m, family='binomial', data=forestData)
+
+AICresults = aictab(list(modelNull,model100m,model500m,model1km,
+            model2km, model3km, model4km, model5km),
+       modnames=c('Null','100m','500m', '1 km','2 km',
+          '3 km','4 km','5 km'))
+
+AICresults
+
+# extract betas
+modelID = c('Null','100m','500m', '1 km','2 km',
+          '3 km','4 km','5 km')
+
+betaInt = c(modelNull$coefficients[1],model100m$coefficients[1],
+          model500m$coefficients[1],model1km$coefficients[1],
+          model2km$coefficients[1], model3km$coefficients[1],
+          model4km$coefficients[1], model5km$coefficients[1])
+
+beta1 = c(modelNull$coefficients[2],model100m$coefficients[2],
+          model500m$coefficients[2],model1km$coefficients[2],
+          model2km$coefficients[2], model3km$coefficients[2],
+          model4km$coefficients[2], model5km$coefficients[2])
+
+modelResultsDF = data.frame(cbind(betaInt,beta1))
+colnames(modelResultsDF) = c('Int','Beta')
+rownames(modelResultsDF) = c('Null','100m','500m', '1 km','2 km',
+          '3 km','4 km','5 km')
+
+modelResultsDF
+```
+
+Based on the candidate model set, the characteristic scale of forest cover effects on Skink presence is **2km**. This candidate model has the lowest AICc score, and the greatest model weight. However, there were multiple competing models (4km,3km,5km) with a delta AICc < 2.0. Together, the top performing model and those competing models contained all the model weight, indicating that all other (1km, 500m, 100, NULL) have virtually no support.
+
+The results of this analysis suggest that the scale with which forest cover has the greatest effect on Skink presence was 2km. It is unlikely that forest cover at this scale has any endogenous impact on Skinks. However, there could be exogenous effects, mediated by forest cover at the 2km scale that influence presence of skinks such as prey abundance. An example could be that mosquito require large enough forests so that wind from the surrounding landscape doesn't blow them around. Mosquitoes are an important food source for Skinks, thus when the forest cover at the 2km scale is sufficiently large, mosquitoes can persist, and are available for to skinks.
+
+
+Overall, there is a positive relationship between forest cover and skink presence. Specifically, as forest cover increases within the 2km buffer, the probability of occurrence increases.
+
+## Challenge 6 (2 points)
+
+**If you encounter ambiguity in identifying the characteristic scale of an effect, can you come up with a clever way to condense the information in the multi-scale variables into just one or two? When might it be ok to include two covariates in the same model (think multiple regression) that represent the same ecological feature measured at different scales (e.g., forest cover at 1 km AND forest cover at 5 km in the same model)? I can think of both a biological and a statistical answer to this question.**
+
+The first thing that comes to mind would be the application of variable reduction techniques such as Principal Component Analysis. We could reduce the dimensions of the analysis by condensing the 7 focal distances in to a much smaller number of components.
+
+If the variables in the multiple regression were not highly correlated (which would lead to multi-collinerity), and the researcher believed that the different scales represented different ecological processes, I believe it would be acceptable to use two or more different scales. In our example, we can see from the correlation matrix that the correlation between the 5km buffer and 100m buffer is weak, suggesting multi-collinearity wouldn't' be a huge concern. If we had biologically defensible hypotheses at each scale it would be okay to incorporate both scales in one regression. On the contrary, we can see that there is a strong correlation between the 4km and 5km buffers. Using these variables in a multiple-regression would cause issues, and we would be unlikely to isolate the effect of each buffer.
+
+
+
+
