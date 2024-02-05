@@ -191,6 +191,8 @@ In the example I created above, the poisson distribution has a expected mean and
 
 While using the mean summary statistic will not likely influence our estimates, the decreased variance will result in an inflated confidence of those estimates.
 
+$\color{red}{\text{Nice work, although I don't think I agree with your "inflated confidence" comment. It seems to me that the confidence actually scales quite nicely with increasing grain size because as you start to average more and more cells, you should be getting a better and better estimate of the random variable that you used to simulate the landscape. +4}}$
+
 
 ## Challenge 2 (4 points)
 
@@ -225,6 +227,8 @@ There could be any number of reasons why someone would be interested in summary 
 
 The relationship between the variance and grain size is similar across all summary statistics. in the other methods of aggregation (*max, min, modal*). However, The mean values are more variable. This makes sense, because the other summary statistics are more influenced by extreme values or outliers among cells being aggregated. 
 
+$\color{red}{\text{Above and beyond. +4}}$
+
 
 ## Challenge 3 (2 points)
 
@@ -235,6 +239,8 @@ Any spatial analysis that involves aggregation is subject to the modifiable area
 Any point that is closer to the edge of the raster file than the furthest focal distance would be subject to edge effects. For example, if we were interested in the proportion of forest within 5km of a sample location, but we were only 1km from the edge of the raster, a substantial portion of the focal area would lack data. 
 
 An easy solution would be to expand the survey location bounding box by the largest focal distance. There would be some trade off in computer performance by including more data, but it would eliminate the edge effect.
+
+$\color{red}{\text{Perfect. +2}}$
 
 ## Challenge 4 (4 points)
 
@@ -343,6 +349,8 @@ forestData %>% as.data.frame() %>%
 
 There is a statistically significant correlation between many of the focal distances evaluated in this analysis. More specifically, Each focal distance is highly correlated with the next smallest and largest focal distance, indicating that these focal distances are highly related. The strength of association between 2km-5km focal distances are quite high, suggesting that we could use just one in evaluating the trends in Skink presence and forest cover. The association becomes less severe when the spacing of focal distance increases. I would suggest that we could reduce the focal distances evaluated in the analysis to 100m, 500m, 1km, 4km. 
 
+$\color{red}{\text{Awesome. +4}}$
+
 
 ## Challenge 5 (4 points)
 
@@ -395,6 +403,8 @@ The results of this analysis suggest that the scale with which forest cover has 
 
 Overall, there is a positive relationship between forest cover and skink presence. Specifically, as forest cover increases within the 2km buffer, the probability of occurrence increases.
 
+$\color{red}{\text{Perfect! +4}}$
+
 ## Challenge 6 (2 points)
 
 **If you encounter ambiguity in identifying the characteristic scale of an effect, can you come up with a clever way to condense the information in the multi-scale variables into just one or two? When might it be ok to include two covariates in the same model (think multiple regression) that represent the same ecological feature measured at different scales (e.g., forest cover at 1 km AND forest cover at 5 km in the same model)? I can think of both a biological and a statistical answer to this question.**
@@ -402,6 +412,8 @@ Overall, there is a positive relationship between forest cover and skink presenc
 The first thing that comes to mind would be the application of variable reduction techniques such as Principal Component Analysis. We could reduce the dimensions of the analysis by condensing the 7 focal distances in to a much smaller number of components.
 
 If the variables in the multiple regression were not highly correlated (which would lead to multi-collinerity), and the researcher believed that the different scales represented different ecological processes, I believe it would be acceptable to use two or more different scales. In our example, we can see from the correlation matrix that the correlation between the 5km buffer and 100m buffer is weak, suggesting multi-collinearity wouldn't' be a huge concern. If we had biologically defensible hypotheses at each scale it would be okay to incorporate both scales in one regression. On the contrary, we can see that there is a strong correlation between the 4km and 5km buffers. Using these variables in a multiple-regression would cause issues, and we would be unlikely to isolate the effect of each buffer.
+
+$\color{red}{\text{Great thinking. +2}}$
 
 
 
