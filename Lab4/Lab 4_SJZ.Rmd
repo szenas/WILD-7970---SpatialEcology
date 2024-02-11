@@ -143,6 +143,9 @@ PerformanceAnalytics::chart.Correlation(challenge1Results[,
 **Challenge 1 Answer:**
 All of the metrics are highly correlated with at least one other metric. Generally I would say that there is pretty high correlation between all of the metrics. This isn't really all that surprising, as many of the metrics share the same underlying math. One example would be Area vs core area. Based on the relationships between the metrics, it's probably important to look at a variety of metrics, making sure that those chosen are not all highly correlated.
 
+$\color{red}{\text{Nice. +4}}$
+
+
 
 ## Challenge 2 (4 points)
 
@@ -242,6 +245,9 @@ The more 'strict' rook contiguity rules results in a greater number of patches. 
 Selection of contiguity rules should be informed by the biology and ecology of the organism of study, and the scale with which the landcover analysis is conducted. If the project was on a species capable of moving large distances, and the land cover is measured at a relativity small scale, its reasonable to believe that patches being connected at the corners could be perceived as one patch. On the contrary, species that don't move large distances, or are particularly reliant on specific landcovers and unwilling to traverse 'non-habitat' may not be able to utilize patches connected at the corners.
 
 It should be noted that errors in the land cover classification are likely when looking as small scales. Specifically, we wouldn't necessarily expect that the actual patches meet at just one point. It is likely that there is some gradient of the patches at and around the intersection point of the NLCD data.
+
+$\color{red}{\text{Good stuff. +4}}$
+
 
 
 ## Challenge 3 (4 points)
@@ -402,6 +408,7 @@ Challenge3ResultsB
 
 The reduction in the Shannon Diversity Index and Shannon Evenness Index suggests that landcovers have become less 'balanced' over the 18 year period. Specifically, fewer landcovers are occupying more of the space in 2019 when compared to 2001.
 
+$\color{red}{\text{On this latter part, you have the interpretation exactly twisted around. The 2019 landscape is actually more diverse and more even than the 2001 landscape. Overall nice job though. +3}}$
 
 
 ## Challenge 4 (4 points)
@@ -602,6 +609,8 @@ resultsCA
 ```
 
 The class metrics used (Patch Count, Mean Patch Area, and Mean Nearest Neighbor Distance) indicate that the set of models represent habitat gain. As expected, with a fixed extent, increasing the amount of 'habitat' should results in fewer patches, larger mean patch size, and shorter mean distance between the patches classified as habitat.
+
+$\color{red}{\text{Good. +4}}$
 
 
 ## Challenge 5 (4 points)
@@ -846,5 +855,6 @@ I chose these 6 metric and compared them for each model because I thought that i
 
  
 
+$\color{red}{\text{Great stuff, Stephen. +4}}$
 
 
