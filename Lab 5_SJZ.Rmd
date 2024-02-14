@@ -1,0 +1,338 @@
+---
+title: "Lab 5 assignment - Point pattern analysis"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r Import Required Packages, warning=FALSE, message=FALSE}
+# Clear environment
+rm(list=ls())
+
+require(spatstat)
+require(tidyverse)
+require(terra)
+require(tidyterra)
+require(sf)
+require(cowplot)
+```
+
+
+# Challenge 1 (3 points)
+
+Create a simulation window on a landscape stretching from 0 to 100 units in both the x and y directions. Now simulate the distribution of an organism on this landscape using a Poisson process with a lambda value of 0.01. Plot this organism's distribution. How many organisms are there on your landscape? What is the expected number of organisms that you should find on this landscape based on your simulation parameters? Why?
+
+```{r Challenge 1, warning=FALSE}
+# Set seed for reproducability
+set.seed(2323)
+
+# Set Observation Window
+simWin = owin(xrange = c(0, 100), yrange = c(0, 100))
+
+# Simulate Distribution
+simDistribution = rpoispp(lambda = 0.1, nsim = 1, win = simWin)
+
+# Simulated # Individuals
+n.sim = simDistribution$n
+
+plot(simDistribution)
+
+```
+
+
+**Challenge 1 Answers:**
+
+Based on the Poisson distribution, the expected number of individuals is the probability of occurrence (lambda) multiplied by the number of cells. In this case, we would expect there to be 1 individual for each 10 cells, or 1000 individuals across the whole study window. In the simulation, I observed 984 individuals. If i were to repeat the simulation more times, the average number of individuals across all simulations would approach the expected value (1000 individuals). 
+
+
+# Challenge 2 (3 points)
+
+Verify that there no linear or quadratic pattern in the distribution of your organisms using fitted Poisson process models. Show the outcome of this analysis and explain your conclusion.
+
+```{r Challenge 2, warning=FALSE}
+ppInt = ppm(simDistribution, ~1)
+ppXY = ppm(simDistribution, ~ x+y)
+ppXY2 = ppm(simDistribution, ~polynom(x,y,2))
+
+data.frame(model = c('Null', 'xy', 'xy2'),
+           AIC = c(AIC(ppInt), AIC(ppXY), AIC(ppXY2)))
+
+```
+
+**Challenge 2 Answer:**
+To test if there were linear or quadratic trends in the simulated distribution, I fitted an intercept, linear, and quadratic function to the distribution. I compared the models based on AIC. The Null and linear models performed better than the quadratic models, and there was no statistical difference between the performance of the Null and linear model, confirming there is likely no trends within the simulated point pattern.
+
+
+# Challenge 3 (14 points)
+
+I have simulated the distributions of 2 critters and provided their x-y coordinates. One of them is a non-territorial predator. The second is a critter that is preyed upon by the predator and exhibits a fear response to the predator's presence. Use the tools you learned in the lab to explore the distributions of these two critters. Identify which one is the predator and which is the prey, and provide code and a thorough justification supporting your conclusion.
+
+
+```{r Challenge 3 - Data}
+
+# Import C1 points
+critter1 = read.csv('https://raw.githubusercontent.com/ValenteJJ/SpatialEcology/main/Week5/species1.csv') %>% 
+  mutate(org = 'critter1')
+
+# Import C2 points
+critter2 = read.csv('https://raw.githubusercontent.com/ValenteJJ/SpatialEcology/main/Week5/species2.csv') %>%
+  mutate(org = 'critter2')
+
+# Define observation window
+predPreyWin = owin(xrange = c(0, 100), yrange = c(0, 100))
+
+
+#Point Patterns
+# Critter 1
+pppC1 = ppp(x = critter1$x, y = critter1$y, window = predPreyWin)
+# Critter 2
+pppC2 = ppp(x = critter2$x, y = critter2$y, window = predPreyWin)
+# Critter 1 & Critter 2
+bothCritters = rbind(critter1,critter2)
+
+
+pppC12 = ppp(x = bothCritters$x, y = bothCritters$y,
+             window = predPreyWin,
+             marks = as.factor(bothCritters$org))
+
+
+# Visualize the distributions together
+ggplot(bothCritters,aes(x,y))+
+  geom_point(aes(color = org), size = 2)+
+  scale_color_manual(values = c("critter1" = 'blue',
+                                "critter2" = 'red'),
+                     name = 'organism')+
+  coord_fixed()
+
+
+```
+
+
+```{r Kernel Heat Maps}
+plot(density(pppC1,1),main = 'Critter 1 Density')
+plot(density(pppC2,1),main = 'Critter 2 Density')
+```
+
+**Kernel Density Heat Maps:**
+Nothing conclusive. Both critters appear randomly distributed, although critter one has a noticeable hot spot in the upper left quadrant.
+
+*Evidence:*
+
+*Critter 1: NA*
+
+*Critter 2: NA*
+
+```{r Quadrant Count}
+# Define Quadrats for each critter
+qc1 = quadratcount(pppC1, nx=5,ny=5)
+qc2 = quadratcount(pppC2, nx=5,ny=5)
+
+# Visualize Critter 1 Quad Count
+plot(pppC1, main = 'Critter 1 Quadrat Count')
+plot(qc1,col = 'red', add = T)
+
+# Visualize Critter 2 Quad Count
+plot(pppC2, main = 'Critter 2 Quadrat Count')
+plot(qc2,col = 'red', add = T)
+```
+
+**Quadrat Counts:**
+Nothing Conclusive. However, it does appear like there are high counts of Critter 1 in grid cells with low counts of Critter 2. Most notably the top left and middle right.
+
+```{r Chi Squared}
+csc1 = quadrat.test(pppC1,nx=5,ny=5,method='Chisq')
+csc2 = quadrat.test(pppC2,nx=5,ny=5,method='Chisq')
+
+csResdf = data.frame(critter = c('Critter1','Critter2'),
+                     pval = c(csc1$p.value,csc2$p.value))
+
+csResdf
+```
+
+**Chi-Squared Test:**
+H0 of the Chi-squared test is that the point patterns exhibit complete spatial randomness. Based on the Chi-squared test, it appears like the point pattern for Critter 1 is not random, which we might expect from the prey species that shows a fear response towards the predators presence. The chi-squared test for Critter 2 suggests that the point pattern is not significantly different from complete spatial randomness (alpha = 0.5).
+
+Although the non-territorial nature of the predator doesn't imply complete spatial randomness in the point pattern, This may be the first evidence towards identifying which species is the predator and which species is the prey.
+
+*Evidence:*
+
+*Critter 1: Prey*
+
+*Critter 2: Predator*
+
+```{r Ripleys L - isotropic edge Correction, message=F}
+# Critter 1 - Isotropic
+c1CsrI = envelope(pppC1,Lest,nsim=100,rank = 1,
+                 correction = 'isotropic', global = F)
+
+# Visualize Critter 1 - Isotropic
+plot(c1CsrI, .-r~r, shade = c('hi','lo'), legend = F,
+     main = "Critter 1 - Ripleys L - Isotropic")
+
+# Critter 1 - toroidal 
+c1CsrT = envelope(pppC1,Lest,nsim=100,rank = 1,
+                 correction = 'translate', global = F)
+
+# Visualize Critter 1 - toroidal
+plot(c1CsrT, .-r~r, shade = c('hi','lo'), legend = F,
+     main = "Critter 1 - Ripleys L - Torioidal")
+
+# Critter 2 - Isotropic
+c2CsrI = envelope(pppC2,Lest,nsim=100,rank = 1,
+                 correction = 'isotropic', global = F)
+
+# Visualize Critter 2 - isotropic
+plot(c2CsrI, .-r~r, shade = c('hi','lo'), legend = F,
+     main = "Critter 2 - Ripleys L - Isotropic")
+
+# Critter 2 - toroidal
+c2CsrT = envelope(pppC2,Lest,nsim=100,rank = 1,
+                 correction = 'translate', global = F)
+
+# Visualize Critter 2 - isotropic
+plot(c2CsrT, .-r~r, shade = c('hi','lo'), legend = F,
+     main = "Critter 2 - Ripleys L - Torioidal")
+
+```
+
+**Ripley's L - with isotrophic edge correction**
+I chose Ripley's L over K because it allows for a direct comparison with complete spatial randomness. I tested both isotropic and toroidal edge corrections to assess the difference in outcomes between the different edge correction options. However, I'm generally unwilling to assume that the distribution of predators and prey outside of the observation window was identical to the the distribution within the window, thus, I put more weight into the isotropic edge correction technique.
+
+With regard to the toroidal edge correction, neither critter exhibited any degree of clustering. More specifically, the observed clustering was contained within the extremes of what we might expect from a random distribution.
+
+However, the isotropic edge correction suggests that critter 1 displayed clustering beyond what we would expect from a random distribution. Predominately in the 7 to 17 spatial unit range.
+
+If the predator is non-territorial, and is randomly distributed across the landscape, we would not expect to find any clustering, suggesting that critter 2 is the predator. If the prey species exhibits avoidance of the predator, this may result in clustering of the prey species at some spatial unit. Thus, the Ripley's L of critter 1 with the isotropic shift provides evidence that critter 1 is the prey species. 
+
+*Evidence:*
+
+*Critter 1: Prey*
+
+*Critter 2: Predator*
+
+```{r Pair Correlation Function (g Function)}
+# Critter 1 - Isotropic
+c1gI = envelope(pppC1, pcf, nsim = 100, rank = 1,
+                correction='isotropic', global = F)
+
+# Visualize Critter 1 - isotropic
+plot(c1gI, shade = c('hi','lo'), legend = F,
+     main = "Critter 1 - g function - Isotropic")
+
+# Critter 1 - Toroidal
+c1gT = envelope(pppC1, pcf, nsim = 100, rank = 1,
+                correction='translate', global = F)
+
+# Visualize Critter 1 - Toroidal
+plot(c1gT, shade = c('hi','lo'), legend = F,
+     main = "Critter 1 - g function - Toroidal")
+
+# Critter 2 - isotropic
+c2gI = envelope(pppC2, pcf, nsim = 100, rank = 1,
+                correction='isotropic', global = F)
+
+# Visualize Critter 2 - isotropic
+plot(c2gI, shade = c('hi','lo'), legend = F,
+     main = 'Critter 2 - g function - isotropic')
+
+# Critter 2 - toroidal
+c2gT = envelope(pppC2, pcf, nsim = 100, rank = 1,
+                correction='translate', global = F)
+
+# Visualize Critter 2 - isotropic
+plot(c2gT, shade = c('hi','lo'), legend = F,
+     main = 'Critter 2 - g function - toroidal')
+
+```
+
+**Pair Correlation Function:**
+Inconclusive. Depsite Critter 1 having a few small 'bumps' outside of the values produced from 100 iterations of complete spatial randomness (including a bump around 7 spatial units - which matches what we observed in the Ripley's L), It generally appears like both Critter 1 and critter 2 do not vary from complete spatial randomness.
+
+*Evidence:*
+
+*Critter 1: NA*
+
+*Critter 2: NA*
+
+```{r Nearest Neighbor}
+# Critter 1
+c1NN = envelope(pppC1, Gest, nsim=99,
+                rank=1, correction='rs', global=F)
+
+# Visualize Critter 1
+plot(c1NN, shade=c('hi', 'lo'), legend=F,
+     main = 'Critter 1 - Nearest Neighbor')
+
+# Critter 2
+c2NN = envelope(pppC2, Gest, nsim=99,
+                rank=1, correction='rs', global=F)
+
+# Visualize Critter 2
+plot(c2NN, shade=c('hi', 'lo'), legend=F,
+     main = 'Critter 2 - Nearest Neighbor')
+
+```
+
+**Nearest Neighbor - with border correction:**
+Inconclusive. Neither Critter 1 or Critter 2 differed from complete spatial randomness in terms of the expected distance to the nearest neighbor.
+
+*Evidence:*
+
+*Critter 1: NA*
+
+*Critter 2: NA*
+
+
+```{r Marked PPA }
+# i = c1, j = c2
+lMultic1c2 = envelope(pppC12,Lcross,nsim = 100, rank = 1,
+                      global = F, i = 'critter1', j = 'critter2',
+                      simulate = expression(rlabel(pppC12)))
+
+plot(lMultic1c2, .-r~r, legend = F,
+     main = 'I = C1, J = C2')
+
+
+# i = c2, j = c1
+lMultic2c1 = envelope(pppC12,Lcross,nsim = 100, rank = 1,
+                      global = F, i = 'critter2', j = 'critter1',
+                      simulate = expression(rlabel(pppC12)))
+
+plot(lMultic2c1, .-r~r, legend = F,
+     main = 'I = C2, J = C1')
+
+
+# i = c1, j = c1
+lMultic1c1 = envelope(pppC12,Lcross,nsim = 100, rank = 1,
+                      global = F, i = 'critter1', j = 'critter1',
+                      simulate = expression(rlabel(pppC12)))
+
+plot(lMultic1c1, .-r~r, legend = F,
+     main = 'I = C1, J = C1')
+
+# i = c2, j = c2
+lMultic2c2 = envelope(pppC12,Lcross,nsim = 100, rank = 1,
+                      global = F, i = 'critter2', j = 'critter2',
+                      simulate = expression(rlabel(pppC12)))
+
+plot(lMultic2c2, .-r~r, legend = F,
+     main = 'I = C2, J = C2')
+
+
+```
+
+**Marked Sample Analysis - Ripley's L:**
+
+Based on the marked analysis, It appears like we observed both critter 1 and critter 2 less than expected relative to the location of the other species. Suggesting that there is some degree of aversion between one of the critters and the other. When we compare the distribution of critter 1 relative to other critter 1's, there appears to be clustering between 4 and 25 spatial units (not dissimilar from the Rilpley's L analysis). The distribution of Critter 2's relative to other Critter 2's suggests the distribution is not significantly different from complete spatial randomness.
+
+Based on the evidence, I believe that *Critter 1 is the prey*, and *Critter 2 is the predator*. Based on the marked analysis, we observe fewer critter 1's then expected relative to critter 2 locations. It also appears like there is some degree of clustering of critter 1 at the distances further away from the predator.
+
+
+
+
+
+
+
+
+
+
