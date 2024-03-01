@@ -44,6 +44,9 @@ plot(simDistribution)
 
 Based on the Poisson distribution, the expected number of individuals is the probability of occurrence (lambda) multiplied by the number of cells. In this case, we would expect there to be 1 individual for each 10 cells, or 1000 individuals across the whole study window. In the simulation, I observed 984 individuals. If i were to repeat the simulation more times, the average number of individuals across all simulations would approach the expected value (1000 individuals). 
 
+$\color{red}{\text{You used the wrong simulation value (0.1 vs. 0.01), but you got it all figured out otherwise. Nice job. +3}}$
+
+
 
 # Challenge 2 (3 points)
 
@@ -61,6 +64,9 @@ data.frame(model = c('Null', 'xy', 'xy2'),
 
 **Challenge 2 Answer:**
 To test if there were linear or quadratic trends in the simulated distribution, I fitted an intercept, linear, and quadratic function to the distribution. I compared the models based on AIC. The Null and linear models performed better than the quadratic models, and there was no statistical difference between the performance of the Null and linear model, confirming there is likely no trends within the simulated point pattern.
+
+$\color{red}{\text{You've interpreted the AIC values incorrectly. That is, you've stumbled on a wonky situation where your quadratic model actually fits better than your null model. That's not supposed to happen, but such situations can arise once in a while. Nonetheless, your intuition was sound. +2}}$
+
 
 
 # Challenge 3 (14 points)
@@ -329,6 +335,7 @@ Based on the evidence, I believe that *Critter 1 is the prey*, and *Critter 2 is
 
 
 
+$\color{red}{\text{Awesome work, Stephen! +14}}$
 
 
 
