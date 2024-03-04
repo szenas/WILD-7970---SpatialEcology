@@ -57,6 +57,9 @@ C1plot
 
 There are a few areas were we have some clustering of low values (lower-left and upper right quadrants) and a few areas where there is some clustering of high values (lower-right and middle-left).  Generally I would say there is some evidence there is spatial dependence in mean bee abundance across the sample area
 
+$\color{red}{\text{Nice. +2}}$
+
+
 
 # Challenge 2 (3 points)
 
@@ -147,6 +150,9 @@ I tested for anisotropy, and concluded that trends in spatial dependence were si
 Lastly, interpretations were limited to 90 meters, as this value represents 2/3 of the maximum distance between points.
 
 Generally, if we fail to account for the spatial dependence in the data, our estimates of mean bee abundance may be biased, and/or the risk of type 1 errors increases.
+
+$\color{red}{\text{Perfect. +3}}$
+
 
 
 # Challenge 3 (4 points)
@@ -248,6 +254,9 @@ The correlogram and semi-variogram based on the residuals is very similar to the
 
 Together the empirical tests suggest there is spatial dependence in the residual errors of the linear model we used to estimate mean bee abundance. This represents a violated assumption in our linear regression model, which may results in biased parameter estimates or inflated type 1 error risk.
 
+$\color{red}{\text{Awesome. +4}}$
+
+
 
 # Challenge 4 (4 points)
 
@@ -275,6 +284,7 @@ plot(blueVaneSpatVect, alpha = 0.65, pch = 3, extend = FALSE,
 
 ```
 
+$\color{red}{\text{Perfect. +4}}$
 
 
 # Challenge 5 (4 points)
@@ -362,6 +372,9 @@ lines(mlSph, col='blue')
 
 After including the mean floral resources within 15 meters of the sample site, we have effectively eliminated the issue of spatial dependence. Correlation and variation between the measure of the residual error in mean bee abundance is consistent across all measured distances. 
 
+$\color{red}{\text{... and not different than what would be expected if the values were randomly distributed in space. +4}}$
+
+
 # Challenge 6 (3 points)
 
 What is your assessment regarding the distribution of bee abundance in this study area? Does it exhibit spatial dependence, and if so, what is driving that pattern?
@@ -371,3 +384,6 @@ What is your assessment regarding the distribution of bee abundance in this stud
 The distribution of mean bee abundance in this study area does exhibit spatial dependence. The primary driver of the pattern was floral resources. Once we addressed the issue of spatial dependence, by including mean floral resources within 15 meters of each blue vane trap in the model, our estimates of the effect size and error are more reliable. 
 
 Overall, we see a positive relationship between mean bee abundance and floral resources. As floral resources increase within the 15 meter radius of the blue vane trap, mean bee abundance increases. The intercept of the model is 4.25, suggesting that mean bee abundance across the study site is 4.25. This estimate is roughly one third of the estimate produced by the original intercept only model. 
+
+$\color{red}{\text{Specifically, the flowers are spatially aggregated, the bees are responding to the flowers, so the bees are spatially aggregated. Also, your interpretation of the intercept is incorrect. That means that the expected abundance of bees is 4.25 at a point that has no floral resources within 15 m. +2}}$
+
