@@ -183,11 +183,11 @@ plot(rfMap, main = 'Random Forest')
 
 # **Challenge 1 Answer**
 
-From a broad scale, it appears like each of the three models are similar in which areas are classified by greater occupancy scores. Despite differences in the shape and size of high occupancy areas, it's clear that the western half of the study area contains most of the high values.
+From a broad scale, it appears like each of the three models are similar with regard to the areas that are classified by greater occupancy scores. Despite differences in the shape and size of high occupancy areas, it's clear that the western half of the study area contains most of the high values.
 
 Each of the three models were constructed from presence-only data, however, the glm and random forest models also incorporate background points representing pseudo-absences. The inclusion of these extra samples (treated as absences) is likely a driving factor in the difference between the envelope method and the glm and rf methods.
 
-There is clearly a greater amount of high occupancy pixels in the glm model when compared to the rf method. While I'm unclear on what could be driving the difference, I suspect that some sort of smoothing is occurring in the glm that produces more intermediate occupancy scores in some areas. This would be in contrast to the rf model that can 'create' more defined thresholds.
+There is clearly a greater amount of high occupancy pixels in the glm model when compared to the rf method. While I'm unclear on what could be driving the difference, I suspect that some sort of smoothing is occurring in the glm that produces more intermediate occupancy scores in some areas.
 
 
 
@@ -364,11 +364,9 @@ print(resDf)
 
 # **Challenge 4 Answer:**
 
-I don't really have a good justification for 0.15 as the threshold for deliniating habitat from non habitat. My logic is that if we sampled 100 locations with similar characteristics, and we observed VATH 15 times, it would seem to me that is more then just chance and that particular area could be considered habitat.
+I don't really have a good justification for 0.15 as the threshold for deliniating habitat from non habitat. My logic is that if we sampled 100 locations with similar characteristics, and we observed VATH 15 times, it would seem to me that is more then just chance and that particular area could be considered habitat (by some definitions).
 
 Based on the threshold I set, the mesic forest area is much larger then the rf model habitat. As the threshold is reduced (lower estimated occupancy is considered habitat), the difference in total area and mean patch size calculations between the models gets smaller.
-
-In what situations might you rely on one map over the other?
 
 I would choose the model based on how well the model predicted VATH occupancy. Despite its added complexity, perhaps the map of mesic forest is better at predicting VATH occupancy. Just because the model is more complex, doesn't mean its better or good. All that being said, it's hard for me to believe that VATH are just responding to mesic forest and none of the covariates we modeled with the rf model have biological significance. The decision of which model/map to use would have to be based on my research objectives.
 
