@@ -1,0 +1,525 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+```{r Install Packages, warning=FALSE, message=FALSE, echo = FALSE}
+
+# Clear Environment
+rm(list=ls())
+
+# Data Manipulation and Visualization
+require(tidyverse)
+require(terra)
+require(tidyterra)
+require(patchwork)
+
+# Spatial Objects
+require(sf)
+
+# Home range and Selection Tools
+require(adehabitatHR)
+require(adehabitatLT)
+
+```
+
+```{r Import Panther Data}
+
+panthers = st_read('/vsicurl/https://github.com/ValenteJJ/SpatialEcology/raw/main/Week10/panthers.shp') %>% 
+  mutate(CatID = as.factor(CatID))
+
+summary(panthers)
+
+```
+
+
+# Challenge 1 (4 points)
+
+Create a table with 6 rows and 5 columns. Each row should represent one panther. The first column should represent the panther's ID, and the other 4 columns should represent the estimated 95% home range. Make sure that all of your units for your home range estimates are the same. Ensure that the final table outputs from the code below.
+
+
+```{r}
+uniqueID = unique(panthers$CatID)
+
+
+
+panthersSP = as(panthers,'Spatial')
+crsVariable = st_crs(panthersSP)
+ 
+
+# Create Spatial Objects witho coordinates for plotting
+pnth100cords = st_as_sfc(panthersSP[panthersSP$CatID == '100',])
+pnth131cords = st_as_sfc(panthersSP[panthersSP$CatID == '131',])
+pnth137cords = st_as_sfc(panthersSP[panthersSP$CatID == '137',])
+pnth130cords = st_as_sfc(panthersSP[panthersSP$CatID == '130',])
+pnth143cords = st_as_sfc(panthersSP[panthersSP$CatID == '143',])
+pnth147cords = st_as_sfc(panthersSP[panthersSP$CatID == '147',])
+
+# MCP
+mcp95 = mcp(panthersSP[,'CatID'],percent = 95, unin = 'm', unout = 'km2')
+mcp95sf = st_as_sf(mcp95)
+mcp95sf = mcp95sf %>% st_transform(crsVariable)
+# mcp95sf = st_transform(mcp95sf,crs = crsVariable$wkt)
+
+
+# KD
+kernelHrefEpa = kernelUD(panthersSP[,'CatID'],h = 'href', kern = 'epa',)
+kd95sf = st_as_sf(getverticeshr(kernelHrefEpa, percent = 95))
+kd95sf = kd95sf %>% st_transform(crsVariable)
+# kd95sf = st_transform(kd95sf,crs = crsVariable$wkt)
+
+#LoCoH 100
+panther100 = panthersSP[panthersSP$CatID==100,]
+kInit = round(nrow(coordinates(panther100))^0.5, 0)
+kSearch = seq(kInit, 10*kInit, by=5) #number of points
+# locohKrange = LoCoH.k.area(SpatialPoints(coordinates(panther100)), krange=kSearch)
+kVal = kSearch[9]
+locohK = LoCoH.k(SpatialPoints(coordinates(panther100)), k = kVal, unin = 'm', unout = 'ha')
+locohKSf = st_as_sf(locohK)
+locohK95Sf100 = locohKSf[50,]
+locohK95Sf100 = locohK95Sf100 %>% st_set_crs(crsVariable)
+# locohK95Sf100 = st_set_crs(locohK95Sf100,crsVariable$wkt)
+
+
+#LoCoH 131
+panther131 = panthersSP[panthersSP$CatID==131,]
+kInit = round(nrow(coordinates(panther131))^0.5, 0)
+kSearch = seq(kInit, 10*kInit, by=5) #number of points
+# locohKrange = LoCoH.k.area(SpatialPoints(coordinates(panther131)), krange=kSearch)
+kVal = kSearch[9]
+locohK = LoCoH.k(SpatialPoints(coordinates(panther131)), k = kVal, unin = 'm', unout = 'ha')
+locohKSf = st_as_sf(locohK)
+locohK95Sf131 = locohKSf[81,]
+locohK95Sf131 = locohK95Sf131 %>% st_set_crs(crsVariable)
+# locohK95Sf131 = st_set_crs(locohK95Sf131,crsVariable$wkt)
+
+#LoCoH 137
+panther137 = panthersSP[panthersSP$CatID==137,]
+kInit = round(nrow(coordinates(panther137))^0.5, 0)
+kSearch = seq(kInit, 10*kInit, by=5) #number of points
+# locohKrange = LoCoH.k.area(SpatialPoints(coordinates(panther137)), krange=kSearch)
+kVal = kSearch[9]
+locohK = LoCoH.k(SpatialPoints(coordinates(panther137)), k = kVal, unin = 'm', unout = 'ha')
+locohKSf = st_as_sf(locohK)
+locohK95Sf137 = locohKSf[66,]
+locohK95Sf137 = st_set_crs(locohK95Sf137,crsVariable$wkt)
+
+#LoCoH 130
+panther130 = panthersSP[panthersSP$CatID==130,]
+kInit = round(nrow(coordinates(panther130))^0.5, 0)
+kSearch = seq(kInit, 8*kInit, by=5) #number of points
+# locohKrange = LoCoH.k.area(SpatialPoints(coordinates(panther130)), krange=kSearch)
+kVal = kSearch[2]
+locohK = LoCoH.k(SpatialPoints(coordinates(panther130)), k = kVal, unin = 'm', unout = 'ha')
+locohKSf = st_as_sf(locohK)
+locohK95Sf130 = locohKSf[80,]
+locohK95Sf130 = st_set_crs(locohK95Sf130,crsVariable$wkt)
+
+
+#LoCoH 143
+panther143 = panthersSP[panthersSP$CatID==143,]
+kInit = round(nrow(coordinates(panther143))^0.5, 0)
+kSearch = seq(kInit, 10*kInit, by=5) #number of points
+# locohKrange = LoCoH.k.area(SpatialPoints(coordinates(panther143)), krange=kSearch)
+kVal = kSearch[5]
+locohK = LoCoH.k(SpatialPoints(coordinates(panther143)), k = kVal, unin = 'm', unout = 'ha')
+locohKSf = st_as_sf(locohK)
+locohK95Sf143 = locohKSf[98,]
+locohK95Sf143 = st_set_crs(locohK95Sf143,crsVariable$wkt)
+
+#LoCoH 147
+panther147 = panthersSP[panthersSP$CatID==147,]
+kInit = round(nrow(coordinates(panther147))^0.5, 0)
+kSearch = seq(kInit, 10*kInit, by=5) #number of points
+# locohKrange = LoCoH.k.area(SpatialPoints(coordinates(panther147)), krange=kSearch)
+kVal = kSearch[11]
+locohK = LoCoH.k(SpatialPoints(coordinates(panther147)), k = kVal, unin = 'm', unout = 'ha')
+locohKSf = st_as_sf(locohK)
+locohK95Sf147 = locohKSf[83,]
+locohK95Sf147 = st_set_crs(locohK95Sf147,crsVariable$wkt)
+
+
+
+# Brownian Bridge
+substrRight = function(x, n){
+  substr(x, nchar(x) - n+1, nchar(x))
+}
+
+panthersSPBB = panthers %>%
+  mutate(Juldate = as.character(Juldate)) %>%
+  mutate(date = as.numeric(substrRight(Juldate,3))) %>%
+  mutate(Date = as.Date(date,origin = as.Date('2006-01-01'))) %>%
+  mutate(Date = as.POSIXct(Date,'%Y-%m-%d')) %>%
+  as('Spatial')
+
+pantherLtraj = as.ltraj(xy = coordinates(panthersSPBB),date = panthersSPBB$Date,
+                        id = panthersSPBB$CatID, typeII = T)
+
+plot(pantherLtraj)
+
+sigma1 = liker(pantherLtraj,sig2 = 450, rangesig1 = c(2,200))
+
+# BB 100
+sig1 = sigma1$'100'$sig1
+bb100 = kernelbb(pantherLtraj[1],sig = sig1 ,sig2 = 450, grid = 500)
+bb95sf100 = st_as_sf(getverticeshr(bb100, percent = 95))
+bb95sf100 = bb95sf100 %>% st_set_crs(crsVariable)
+# bb95sf100 = st_set_crs(bb95sf100,crsVariable$wkt)
+
+
+# BB 131
+sig1 = sigma1$'131'$sig1
+bb131 = kernelbb(pantherLtraj[3],sig = sig1 ,sig2 = 450, grid = 500)
+bb95sf131 = st_as_sf(getverticeshr(bb131, percent = 95))
+bb95sf131 = bb95sf131 %>% st_set_crs(crsVariable)
+# bb95sf131 = st_set_crs(bb95sf131,crsVariable$wkt)
+
+# BB 137
+sig1 = sigma1$'137'$sig1
+bb137 = kernelbb(pantherLtraj[4],sig = sig1 ,sig2 = 450, grid = 500)
+bb95sf137 = st_as_sf(getverticeshr(bb137, percent = 95))
+bb95sf137 = st_set_crs(bb95sf137,crsVariable$wkt)
+
+# BB 130
+sig1 = sigma1$'130'$sig1
+bb130 = kernelbb(pantherLtraj[2],sig = sig1 ,sig2 = 450, grid = 500)
+bb95sf130 = st_as_sf(getverticeshr(bb130, percent = 95))
+bb95sf130 = st_set_crs(bb95sf130,crsVariable$wkt)
+
+# BB 143
+sig1 = sigma1$'143'$sig1
+bb143 = kernelbb(pantherLtraj[5],sig = sig1 ,sig2 = 450, grid = 500)
+bb95sf143 = st_as_sf(getverticeshr(bb143, percent = 95))
+bb95sf143 = st_set_crs(bb95sf143,crsVariable$wkt)
+
+# BB 147
+sig1 = sigma1$'147'$sig1
+bb147 = kernelbb(pantherLtraj[6],sig = sig1 ,sig2 = 450, grid = 500)
+bb95sf147 = st_as_sf(getverticeshr(bb147, percent = 95))
+bb95sf147 = st_set_crs(bb95sf147,crsVariable$wkt)
+
+#Put it all together in a dataframe
+pantherHRdf = data.frame(ID = sort(uniqueID),
+                         mcp95 = mcp95sf$area,
+                         kd95 = kd95sf$area,
+                         locoh95 = c(locohK95Sf100$area,locohK95Sf130$area,
+                                     locohK95Sf131$area,locohK95Sf137$area,
+                                     locohK95Sf143$area,locohK95Sf147$area),
+                         bb95 = c(bb95sf100$area,bb95sf130$area,bb95sf131$area,
+                                  bb95sf137$area,bb95sf143$area,bb95sf147$area))
+pantherHRdf[2] = pantherHRdf[2]*100
+
+pantherHRdf
+
+```
+
+```{r}
+ggPNTH100 = ggplot()+
+  theme_bw()+
+  theme(axis.text = element_blank())+
+  ggtitle('100')+
+  theme(plot.title = element_text(hjust = 0.5))+
+  theme(legend.position = 'none')+
+  geom_sf(data = pnth100cords)+
+  geom_sf(data = mcp95sf$geometry[1], aes(color = "MCP"), fill = NA)+
+  geom_sf(data = kd95sf$geometry[1], aes(color = "KD"), fill = NA)+
+  geom_sf(data = locohK95Sf100$geometry, aes(color = 'LoCoH'), fill = NA)+
+  geom_sf(data = bb95sf100$geometry,aes(color = 'BB'), fill = NA)
+
+
+ggPNTH131 = ggplot()+
+  theme_bw()+
+  theme(axis.text = element_blank())+
+  ggtitle('131')+
+  theme(plot.title = element_text(hjust = 0.5))+
+  theme(legend.position = 'none')+
+  geom_sf(data = pnth131cords)+
+  geom_sf(data = mcp95sf$geometry[3], aes(color = "MCP"), fill = NA)+
+  geom_sf(data = kd95sf$geometry[3], aes(color = "KD"), fill = NA)+
+  geom_sf(data = locohK95Sf131$geometry, aes(color = 'LoCoH'), fill = NA)+
+  geom_sf(data = bb95sf131$geometry,aes(color = 'BB'), fill = NA)
+
+
+ggPNTH137 = ggplot()+
+  theme_bw()+
+  theme(axis.text = element_blank())+
+  ggtitle('137')+
+  theme(plot.title = element_text(hjust = 0.5))+
+  theme(legend.position = 'none')+
+  geom_sf(data = pnth137cords)+
+  geom_sf(data = mcp95sf$geometry[4], aes(color = "MCP"), fill = NA)+
+  geom_sf(data = kd95sf$geometry[4], aes(color = "KD"), fill = NA)+
+  geom_sf(data = locohK95Sf137$geometry, aes(color = 'LoCoH'), fill = NA)+
+  geom_sf(data = bb95sf137$geometry,aes(color = 'BB'), fill = NA)
+
+ggPNTH130 = ggplot()+
+  theme_bw()+
+  theme(axis.text = element_blank())+
+  ggtitle('130')+
+  theme(plot.title = element_text(hjust = 0.5))+
+  theme(legend.position = 'none')+
+  geom_sf(data = pnth130cords)+
+  geom_sf(data = mcp95sf$geometry[2], aes(color = "MCP"), fill = NA)+
+  geom_sf(data = kd95sf$geometry[2], aes(color = "KD"), fill = NA)+
+  geom_sf(data = locohK95Sf130$geometry, aes(color = 'LoCoH'), fill = NA)+
+  geom_sf(data = bb95sf130$geometry,aes(color = 'BB'), fill = NA)
+
+ggPNTH143 = ggplot()+
+  theme_bw()+
+  theme(axis.text = element_blank())+
+  ggtitle('143')+
+  theme(plot.title = element_text(hjust = 0.5))+
+  theme(legend.position = 'none')+
+  geom_sf(data = pnth143cords)+
+  geom_sf(data = mcp95sf$geometry[5], aes(color = "MCP"), fill = NA)+
+  geom_sf(data = kd95sf$geometry[5], aes(color = "KD"), fill = NA)+
+  geom_sf(data = locohK95Sf143$geometry, aes(color = 'LoCoH'), fill = NA)+
+  geom_sf(data = bb95sf143$geometry,aes(color = 'BB'), fill = NA)
+
+ggPNTH147 = ggplot()+
+  theme_bw()+
+  theme(axis.text = element_blank())+
+  ggtitle('147')+
+  theme(plot.title = element_text(hjust = 0.5))+
+  geom_sf(data = pnth147cords)+
+  geom_sf(data = mcp95sf$geometry[6], aes(color = "MCP"), fill = NA)+
+  geom_sf(data = kd95sf$geometry[6], aes(color = "KD"), fill = NA)+
+  geom_sf(data = locohK95Sf147$geometry, aes(color = 'LoCoH'), fill = NA)+
+  geom_sf(data = bb95sf147$geometry,aes(color = 'BB'), fill = NA)
+
+
+# Package Patchwork to merge ggplots
+ggPNTH100 + ggPNTH130 + ggPNTH131 + ggPNTH137 + ggPNTH143 + ggPNTH147 +
+  plot_layout(ncol = 3)
+```
+
+
+# Challenge 2 (4 points)
+
+Build a boxplot showing the distribution of home range sizes. Your x-axis should have 4 categories (one for each home range type), and your y-axis should show the distribution of the home ranges for the 6 panthers. Which home range estimates tend to be largest? Which ones tend to be smallest? What is your intuitive explanation for why this pattern occurs?
+
+```{r}
+longerPNTHHRdf = pantherHRdf %>% 
+  pivot_longer(cols = 2:5,
+               names_to = 'Method',
+               values_to = 'HR')
+
+widerPNTHHRdf = longerPNTHHRdf %>%
+  pivot_wider(id_cols = Method,
+              names_from = ID,
+              values_from = HR)
+
+
+ggplot(data = longerPNTHHRdf,aes(Method,HR))+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0.5))+
+  ggtitle('Comparison of HR Estimates')+
+  geom_boxplot(outliers = TRUE,outlier.color = 'black',outlier.fill = 'red',
+               outlier.shape = 2,aes(color = Method))+
+  geom_point(aes(color = Method))
+  
+
+
+```
+
+**Challenge 2 Answer:**
+
+Based on the analyses above, The Brownian Bridge and Kernel Density home ranges tend to be the largest, followed by the Minimum Convex Polygon and the Local Convex Hull estimates. KD and BB estimate utilize a smoothing function which extends the utilization distribution beyond the location fixes, where as MCP and LoCoH estimates are constrained by the actual locations (location fixes act as the vertices of the bounding polygons). MCP estimates should always be larger than LoCoH estimates, due to the fact that bounding box off all the points should always be larger than the bounding polygons around subsets of locational data.
+
+# Challenge 3 (3 points)
+
+Choose 1 panther and generate a 100% home range based on the MCP. Calculate (and report) the proportion of this polygon comprised of wet and dry forest. Do you think these amounts are representative of the wet and dry forest available to your panther? Why or why not?
+
+```{r}
+# Land data
+land = rast('https://github.com/ValenteJJ/SpatialEcology/raw/main/Week10/panther_landcover.tif')
+
+classification = read.table('https://raw.githubusercontent.com/ValenteJJ/SpatialEcology/main/Week10/landcover%20reclass.txt', header=T) 
+
+unique(classification$Description2)
+
+land = classify(land, classification[,c(1,3)])
+land = categories(land, value=unique(classification[,c(3,4)]))
+
+# Raster Layer for Wet And Dry Forest Forest
+reclassDF = data.frame(fromValues = c(10,11,12,13),toValues = c(1,2,1,0))
+reclassMatix = as.matrix(reclassDF) 
+landWetDryForest = classify(land, reclassMatix, others = 0)
+wetDryLandPlot = plot(landWetDryForest, main = "Forest Type")
+
+# Function for extracting the raster cells from polygons
+
+landClipFunction = function(rastLayer, clipObj)
+{
+  tmpCrop = crop(rastLayer,clipObj$geometry)
+  # plot(tmpCrop)
+  
+  tmpMask = mask(tmpCrop,clipObj)
+  # plot(tmpMask)
+  
+  rasterResolution = res(rastLayer)[1]
+  # 500mx500m = 0.25km^2
+  hab0Area = nrow(tmpMask[tmpMask$Description2 == 0])*0.25
+  hab1Area = nrow(tmpMask[tmpMask$Description2 == 1])*0.25
+  hab2Area = nrow(tmpMask[tmpMask$Description2 == 2])*0.25
+  TotalArea = hab0Area + hab1Area + hab2Area
+  
+  retDf = data.frame(TotalArea,hab1Area,hab2Area)
+  colnames(retDf) = c("TotalKm2", 'WetKm2', 'DryKm2')
+  
+  retDf = retDf %>% 
+    mutate(PropWet = WetKm2/TotalKm2) %>%
+    mutate(PropDry = DryKm2/TotalKm2)
+  
+  return(retDf)
+}
+
+
+
+```
+
+
+```{r}
+# The Panther
+pnth143 = panthersSP[panthersSP$CatID == 143,]
+
+pnth143mcp100 = mcp(pnth143,percent = 100,unin = 'm',unout = 'km')
+pnth143sf = st_as_sf(pnth143mcp100)
+pnth143sf = st_transform(pnth143sf,crs = crsVariable)
+
+mcpHabitat = landClipFunction(landWetDryForest,pnth143sf )
+print(mcpHabitat)
+
+# Visualize MCP100
+plot(landWetDryForest)
+plot(pnth143sf$geometry, fill = NA, add = TRUE)
+plot(pnth143cords, add = TRUE)
+```
+
+**Challenge 3 Answer:**
+
+Do you think these amounts are representative of the wet and dry forest available to your panther? Why or why not?
+
+Generally I would say that the 95% MCP is a poor representation of the wet and dry forest available to Panther 143. There is a substantial amount of time between fixes, indicating that there is quite a bit of uncertainty in what areas the panther used between locational fixes. Furthermore, because the MCP utilizes location fixes as the vertices of the polygon, we would be making the assumption that space around the fix locations at the vertices of the MCP and outside the polygon are unavailable for selection. I can't come up with many scenarios where this would be defensible. Lastly, it's likely that large chunks of the MCP were never utilized by Panther 143, and the amount of wet and dry forest in the 95% MCP vastly overestimates the amount of wet and dry forest available for the Panther. Using another method, KD or BB, which incorporates intensity of use as well uncertainty would likely provide a more accurate and precise estimate of the wet and dry forest available.
+
+# Challenge 4 (6 points)
+
+Using the same panther you chose for Challenge 3, generate 10 sf objects, one representing each of the 10%, 20%, 30%, ..., 90%, and 100% home ranges based on a Brownian bridge model. Extract the proportion of each of those territories comprised of dry forest and wet forest. Now generate two line graphs, one for wet forest and one for dry. On the x-axis, plot increasing home range size (10-100%). On the y-axis plot the proportion of the territory comprised of wet/dry forest, and link these with a line. Finally, add a horizontal line that shows the rough proportion of that forest type available to the panther (based on challenge 3). Show your output below.
+
+```{r}
+# Trajectory Objects created in step 2
+
+bb10sf143 = st_as_sf(getverticeshr(bb143, percent = 10))
+bb10sf143 = st_set_crs(bb10sf143,crsVariable)
+
+bb20sf143 = st_as_sf(getverticeshr(bb143, percent = 20))
+bb20sf143 = st_set_crs(bb20sf143,crsVariable)
+
+bb30sf143 = st_as_sf(getverticeshr(bb143, percent = 30))
+bb30sf143 = st_set_crs(bb30sf143,crsVariable)
+
+bb40sf143 = st_as_sf(getverticeshr(bb143, percent = 40))
+bb40sf143 = st_set_crs(bb40sf143,crsVariable)
+
+bb50sf143 = st_as_sf(getverticeshr(bb143, percent = 50))
+bb50sf143 = st_set_crs(bb50sf143,crsVariable)
+
+bb60sf143 = st_as_sf(getverticeshr(bb143, percent = 60))
+bb60sf143 = st_set_crs(bb60sf143,crsVariable)
+
+bb70sf143 = st_as_sf(getverticeshr(bb143, percent = 70))
+bb70sf143 = st_set_crs(bb70sf143,crsVariable)
+
+bb80sf143 = st_as_sf(getverticeshr(bb143, percent = 80))
+bb80sf143 = st_set_crs(bb80sf143,crsVariable)
+
+bb90sf143 = st_as_sf(getverticeshr(bb143, percent = 90))
+bb90sf143 = st_set_crs(bb90sf143,crsVariable)
+
+bb100sf143 = st_as_sf(getverticeshr(bb143, percent = 99))
+bb100sf143 = st_set_crs(bb95sf143,crsVariable)
+
+
+# Plot
+pointsPNTH143 = panthers[panthers$CatID==143,]
+
+
+bbHRList = list(bb10sf143,bb20sf143,bb30sf143,bb40sf143,bb50sf143,
+                bb60sf143,bb70sf143,bb80sf143,bb90sf143,bb100sf143)
+
+
+results = matrix(data = NA, nrow = 10, ncol = 5)
+
+for(i in 1:length(bbHRList))
+{
+  tmp = landClipFunction(landWetDryForest, bbHRList[[i]])
+  results[i,1] = tmp[1,1]
+  results[i,2] = tmp[1,2]
+  results[i,3] = tmp[1,3]
+  results[i,4] = tmp[1,4]
+  results[i,5] = tmp[1,5]
+  
+}
+
+
+resultsDf = as.data.frame(results)
+colnames(resultsDf) = c("Total", 'Wet', 'Dry', 'PropWet', 'PropDry')
+
+resultsDf = cbind(HR = c(10,20,30,40,50,60,70,80,90,100),resultsDf)
+
+resultsDf
+
+# Adding MCP 100 forst prop to df for visualization
+resultsDf = cbind(resultsDf, wetMCP = rep(mcpHabitat$PropWet, times = nrow(resultsDf)), dryMCP = rep(mcpHabitat$PropDry, times = nrow(resultsDf)))
+
+
+
+
+# Pivot for Plotting
+longerresultsDf = resultsDf %>% 
+  pivot_longer(cols = c(5:8),
+               names_to = 'Measurement',
+               values_to = 'Prop')
+
+
+
+# Plot it all together
+ggWet = ggplot(data = resultsDf)+
+  geom_point(aes(x = HR, y = PropWet), color = 'red')+
+  geom_line(aes(x = HR, y = PropWet), color = 'red')+
+  geom_hline(yintercept = mcpHabitat$PropWet, color = 'blue')
+
+ggDry = ggplot(data = resultsDf)+
+  geom_point(aes(x = HR, y = PropDry), color = 'red')+
+  geom_line(aes(x = HR, y = PropDry), color = 'red')+
+  geom_hline(yintercept = mcpHabitat$PropDry, color = 'blue')
+
+ggWet + ggDry
+
+ggWetDry = ggplot(data = longerresultsDf)+
+  # Formatting
+  ggtitle('Prop HR Wet and Dry Forest')+
+  labs(x = 'Brownian Bridge Percent HR', y = 'Forest Propotion of HR')+
+  theme(plot.title = element_text(hjust = 0.5))+
+  
+  geom_point(aes(x = HR, y = Prop, color = Measurement))+
+  geom_line(aes(x = HR, y = Prop, color = Measurement))+
+  scale_color_manual(values = c(PropWet  = 'darkblue', PropDry = 'darkred',
+                                wetMCP = 'blue', dryMCP = 'red'))
+
+ggWetDry
+
+
+
+```
+
+# Challenge 5 (3 points)
+
+Does the panther you chose in Challenge 3/4 prefer dry and/or wet forest? What is your justification for your answer?
+
+**Challenge 5 Answer:**
+
+Similar to my answer above, I'm not sure that the 95% MCP is the best measure of the space available to Panther 143. However, If we assume that it is, It appears that Panther 143 is selecting for Wet forest landscapes (as home range increases, a greater proportion of its home range is comprised of wet forest).
+
+However, it appears like Panther 143 is using neither wet or dry forest more than it's availability, suggesting that there may be some other covertype that Panther 143 is selecting for.
