@@ -57,17 +57,17 @@ precip = rast('https://github.com/ValenteJJ/SpatialEcology/raw/main/Week8/precip
 vathPres = vathData %>% filter(VATH==1)
 vathAbs = vathData %>% filter(VATH==0)
 
-vathPresXy = as.matrix(vathPres %>% select(EASTING, NORTHING))
-vathAbsXy = as.matrix(vathAbs %>% select(EASTING, NORTHING))
+vathPresXy = as.matrix(vathPres %>% dplyr::select(EASTING, NORTHING))
+vathAbsXy = as.matrix(vathAbs %>% dplyr::select(EASTING, NORTHING))
 
 
 # Parse Varied Thrush validation data into presence absence and combined matrices, containing x and y coordinates
 vathValPres = vathVal %>% filter(VATH==1)
 vathValAbs = vathVal %>% filter(VATH==0)
 
-vathValXy = as.matrix(vathVal %>% select(EASTING, NORTHING))
-vathValPresXy = as.matrix(vathValPres %>% select(EASTING, NORTHING))
-vathValAbsXy = as.matrix(vathValAbs %>% select(EASTING, NORTHING))
+vathValXy = as.matrix(vathVal %>% dplyr::select(EASTING, NORTHING))
+vathValPresXy = as.matrix(vathValPres %>% dplyr::select(EASTING, NORTHING))
+vathValAbsXy = as.matrix(vathValAbs %>% dplyr::select(EASTING, NORTHING))
 
 # Verify the raster layers are in the appropriate crs, and that the rasters are aligned.
 
@@ -137,14 +137,14 @@ presCovs = presCovs[complete.cases(presCovs),]
 backCovs = backCovs[complete.cases(backCovs),]
 valCovs = valCovs[complete.cases(valCovs),]
 
-backCovs = backCovs %>% select(-ID)
+backCovs = backCovs %>% dplyr::select(-ID)
 colnames(presCovs)[1:2] = c('x','y')
 
 presBackCovs = rbind(presCovs,backCovs)
 
 #(1) the bioclim envelope function
 
-tmp = presCovs %>% select(elev,precip,mesic1km, canopy) %>% as.matrix()
+tmp = presCovs %>% dplyr::select(elev,precip,mesic1km, canopy) %>% as.matrix()
 bioclim = envelope(tmp)
 
 # Predict Occupancy - Envelope Method
@@ -189,6 +189,9 @@ Each of the three models were constructed from presence-only data, however, the 
 
 There is clearly a greater amount of high occupancy pixels in the glm model when compared to the rf method. While I'm unclear on what could be driving the difference, I suspect that some sort of smoothing is occurring in the glm that produces more intermediate occupancy scores in some areas.
 
+$\color{red}{\text{Big differences in the scales of predicted occupancy as well. +3.5}}$
+
+
 
 
 # Challenge 2 (4 points)
@@ -200,10 +203,10 @@ When we fit our GLM in lab, we used background points, rather than true absence 
 vathPresAbs = vathData
 vathPresAbs = vathPresAbs %>% mutate(PRES = VATH)
 vathPresAbs$PRES[vathPresAbs$PRES>0] = 1
-vathPresAbs = vathPresAbs %>% select('EASTING','NORTHING','PRES')
+vathPresAbs = vathPresAbs %>% dplyr::select('EASTING','NORTHING','PRES')
 
 # Get Matrix of coordinates
-vathPresAbsXy = vathPresAbs %>% select('EASTING','NORTHING')
+vathPresAbsXy = vathPresAbs %>% dplyr::select('EASTING','NORTHING')
 vathPresAbsXy = as.matrix(vathPresAbsXy)
 
 # Re-extract raster values to full pres abs dataset
@@ -238,6 +241,9 @@ Because the presence-background model randomly assigns pseudo-absesences across 
 
 My intuition tells me that the presence-absences dataset will provide a better prediction of site occupancy.
 
+$\color{red}{\text{Also, the relative scale for the presence-background dataset is completely dependent on the number of background points, which was ~ 3 times more than the number of true absence points. Thus, the scale of predicted values is much larger for the presence-absence data than presence-background. +3.5}}$
+
+
 
 # Challenge 3 (4 points)
 
@@ -254,7 +260,7 @@ elevData = data.frame(
   gPB = predict(glmModel, tmp,type = 'response'),
   gPA = predict(glmModelPresAbs,tmp,type = 'response')) %>%
   
-  cbind(tmp) %>% select(gPB:elev) %>%
+  cbind(tmp) %>% dplyr::select(gPB:elev) %>%
   pivot_longer(gPB:gPA) %>%
   mutate(variable = 'elevation')
 
@@ -268,7 +274,7 @@ canopyData = data.frame(
   gPB = predict(glmModel, tmp,type = 'response'),
   gPA = predict(glmModelPresAbs,tmp,type = 'response')) %>%
   
-  cbind(tmp) %>% select(gPB:gPA,canopy) %>%
+  cbind(tmp) %>% dplyr::select(gPB:gPA,canopy) %>%
   pivot_longer(gPB:gPA) %>%
   mutate(variable = 'canopy')
 
@@ -282,7 +288,7 @@ precipData = data.frame(
   gPB = predict(glmModel, tmp,type = 'response'),
   gPA = predict(glmModelPresAbs,tmp,type = 'response')) %>%
   
-  cbind(tmp) %>% select(gPB:gPA,precip) %>%
+  cbind(tmp) %>% dplyr::select(gPB:gPA,precip) %>%
   pivot_longer(gPB:gPA) %>%
   mutate(variable = 'Precip')
 
@@ -297,7 +303,7 @@ mesic1kmData = data.frame(
   gPB = predict(glmModel, tmp,type = 'response'),
   gPA = predict(glmModelPresAbs,tmp,type = 'response')) %>%
   
-  cbind(tmp) %>% select(gPB:gPA,mesic1km) %>%
+  cbind(tmp) %>% dplyr::select(gPB:gPA,mesic1km) %>%
   pivot_longer(gPB:gPA) %>%
   mutate(variable = 'Mesic1km')
 
@@ -320,6 +326,9 @@ ggplot(tmp, aes(x=xValue, y=value, color=name))+
 The presence-absence model consistently produces greater covariate effect estimates when compared to the presence-background dataset. Again, this is likely to the arbitrary classification of the pseudo-absences (background points). Because the PA model has confirmed absences, the relationship between occupancy and the covariates is strengthened. This explains the patterns observed in the last challenge.
 
 I am suprised to see how closely the PO estimates match the PA estimates. While there is a clear advantage of having presence-absence data, this exercise showed me that we might be capable of making inference from PO data and come to similar conclusions had we had the known absences.
+
+$\color{red}{\text{Good. But again, recall that our predicted values for the presence-background data is dependent on the number of background points in the model. +4}}$
+
 
 
 # Challenge 4 (4 points)
@@ -370,6 +379,9 @@ Based on the threshold I set, the mesic forest area is much larger then the rf m
 
 I would choose the model based on how well the model predicted VATH occupancy. Despite its added complexity, perhaps the map of mesic forest is better at predicting VATH occupancy. Just because the model is more complex, doesn't mean its better or good. All that being said, it's hard for me to believe that VATH are just responding to mesic forest and none of the covariates we modeled with the rf model have biological significance. The decision of which model/map to use would have to be based on my research objectives.
 
+$\color{red}{\text{Nice. +4}}$
+
+
 # Challenge 5 (4 points)
 
 When we fit the Maxent model in the lab, we used a regularization constant of 1. Fit the model two more times, using regularization (regmult) constants of 0.5 and 3. Construct figures showing the relationship between the 4 explanatory variables and the predicted outcome from these 3 fitted Maxent models. What is the regularization constant doing? Hint: you may need to Google it.
@@ -377,7 +389,7 @@ When we fit the Maxent model in the lab, we used a regularization constant of 1.
 ```{r}
 # Maxent Model
 pbVect = presBackCovs$pres
-covs = presBackCovs %>% select(canopy:precip)
+covs = presBackCovs %>% dplyr::select(canopy:precip)
 
 maxentModelregmult1 = maxnet(p = pbVect, data= covs, regmult = 1, classes='lqpht')
 maxentModelregmult0.5 = maxnet(p = pbVect, data= covs, regmult = 0.5, classes='lqpht')
@@ -395,3 +407,6 @@ plot(maxentModelregmult3,type = 'logistic')
 The regularization constant is used to prevent over fitting by using a greater proportion of the confidence interval around the environmental variables. It also penalizes complexity, such that models get penalized for including parameters that do not substantially improve the model. From the graphs above, it appears like smaller regularization constants allow the y axis to respond more rapidly to changes in the evironmental variable.
 
 source: [https://support.biosecuritycommons.org.au/support/solutions/articles/6000262266-maxent-sdm-explained]
+
+$\color{red}{\text{Good work, Stephen. +4}}$
+
