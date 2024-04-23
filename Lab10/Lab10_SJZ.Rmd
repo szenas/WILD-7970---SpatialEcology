@@ -294,6 +294,8 @@ ggPNTH100 + ggPNTH130 + ggPNTH131 + ggPNTH137 + ggPNTH143 + ggPNTH147 +
   plot_layout(ncol = 3)
 ```
 
+$\color{red}{\text{Nice. +4}}$
+
 
 # Challenge 2 (4 points)
 
@@ -326,6 +328,9 @@ ggplot(data = longerPNTHHRdf,aes(Method,HR))+
 **Challenge 2 Answer:**
 
 Based on the analyses above, The Brownian Bridge and Kernel Density home ranges tend to be the largest, followed by the Minimum Convex Polygon and the Local Convex Hull estimates. KD and BB estimate utilize a smoothing function which extends the utilization distribution beyond the location fixes, where as MCP and LoCoH estimates are constrained by the actual locations (location fixes act as the vertices of the bounding polygons). MCP estimates should always be larger than LoCoH estimates, due to the fact that bounding box off all the points should always be larger than the bounding polygons around subsets of locational data.
+
+$\color{red}{\text{Very nice. +4}}$
+
 
 # Challenge 3 (3 points)
 
@@ -402,6 +407,9 @@ plot(pnth143cords, add = TRUE)
 Do you think these amounts are representative of the wet and dry forest available to your panther? Why or why not?
 
 Generally I would say that the 95% MCP is a poor representation of the wet and dry forest available to Panther 143. There is a substantial amount of time between fixes, indicating that there is quite a bit of uncertainty in what areas the panther used between locational fixes. Furthermore, because the MCP utilizes location fixes as the vertices of the polygon, we would be making the assumption that space around the fix locations at the vertices of the MCP and outside the polygon are unavailable for selection. I can't come up with many scenarios where this would be defensible. Lastly, it's likely that large chunks of the MCP were never utilized by Panther 143, and the amount of wet and dry forest in the 95% MCP vastly overestimates the amount of wet and dry forest available for the Panther. Using another method, KD or BB, which incorporates intensity of use as well uncertainty would likely provide a more accurate and precise estimate of the wet and dry forest available.
+
+$\color{red}{\text{Excellent. +3}}$
+
 
 # Challenge 4 (6 points)
 
@@ -514,6 +522,9 @@ ggWetDry
 
 ```
 
+$\color{red}{\text{Excellent. +6}}$
+
+
 # Challenge 5 (3 points)
 
 Does the panther you chose in Challenge 3/4 prefer dry and/or wet forest? What is your justification for your answer?
@@ -523,3 +534,5 @@ Does the panther you chose in Challenge 3/4 prefer dry and/or wet forest? What i
 Similar to my answer above, I'm not sure that the 95% MCP is the best measure of the space available to Panther 143. However, If we assume that it is, It appears that Panther 143 is selecting for Wet forest landscapes (as home range increases, a greater proportion of its home range is comprised of wet forest).
 
 However, it appears like Panther 143 is using neither wet or dry forest more than it's availability, suggesting that there may be some other covertype that Panther 143 is selecting for.
+
+$\color{red}{\text{Pretty interesting, actually. This is the only panther that doesn't really show selection for dry forest. Great work. +3}}$
