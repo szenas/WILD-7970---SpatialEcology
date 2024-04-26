@@ -132,6 +132,9 @@ The logistic regression performs a similar task, and produces similar results, b
 
 More specifically, The Wi score for Cypress swamp was 5.266, indicating that panthers selected cypress swamp greater than 5x its availability on the landscape. The exponentiated coeficients of the logistic regression for cypress swamps indicates that there is a positive relationships between panther use and cypress swamp, and that for each 1 unit increase in cypress swamp, the odd that a use point was in cypress swamp was 5x as likely.
 
+$\color{red}{\text{Nice work. +5}}$
+
+
 
 # Challenge 2 (5 points)
 
@@ -178,6 +181,9 @@ hist(speedVector)
 **Challenge 2 Answer:**
 
 The most obvious scenario where it would be more appropriate to use the distribution of speeds rather than the distribution of step lengths would be when the time between location fixes was variable. With irregular sampling, the distribution of steps would be influenced by the duration of time between fixes, standardizing the measurement to a movement rate would correct this issue. 
+
+$\color{red}{\text{Excellent. +5}}$
+
 
 # Challenge 3 (5 points)
 
@@ -248,6 +254,9 @@ resultsDecending
 
 *Most Tortuous:* Panther 130, straightness = `r resultsDecending$Straightness[6]`
 
+$\color{red}{\text{Awesome. +5}}$
+
+
 # Challenge 4 (5 points)
 
 For each panther, calculate the frequency with which locations were recorded as points per day. Plot path straightness as a function of frequency (there should be 6 points on this figure, one per panther). What relationship do you notice between these two variables, and why might that pattern be occurring?
@@ -265,5 +274,8 @@ ggplot(data = resultsDecending)+
 **Challenge 4 Answer:**
 
 This is an example of fractal dimensions. As the movement path becomes more complex (i.e. more location fixes) the total distance traveled will increase. As the total distance increases, the straightness index will approach 0, indicating a more tortuous path. We could explore the same concept with one individual. If we sampled each panther at just the first and last observation, the straight line distance and the total distance would be equal (straightness index = 1). If we sampled each panther at 10 second intervals, the total distance traveled would be much larger, resulting in a straightness index much closer to 0.
+
+
+$\color{red}{\text{Great work. +5}}$
 
 
