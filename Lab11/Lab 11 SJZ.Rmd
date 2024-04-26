@@ -132,7 +132,7 @@ The logistic regression performs a similar task, and produces similar results, b
 
 More specifically, The Wi score for Cypress swamp was 5.266, indicating that panthers selected cypress swamp greater than 5x its availability on the landscape. The exponentiated coeficients of the logistic regression for cypress swamps indicates that there is a positive relationships between panther use and cypress swamp, and that for each 1 unit increase in cypress swamp, the odd that a use point was in cypress swamp was 5x as likely.
 
-$\color{red}{\text{Nice work. +5}}$
+$\color{red}{\text{Sort of. The exponentiated beta coefficients represent the odds ratios for the various cover types (i.e., the odds a point in that category is used divided by the odds is is not used). This is the same way that wi is calculated. The only difference here is that we're now including a random effect to account for non-independence among points selected by the same panther. +4}}$
 
 
 
