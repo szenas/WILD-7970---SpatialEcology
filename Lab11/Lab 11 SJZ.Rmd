@@ -267,7 +267,7 @@ For each panther, calculate the frequency with which locations were recorded as 
 
 # Plot the data
 ggplot(data = resultsDecending)+
-  geom_point(aes(x = Straightness, y = ppd, color = ID))
+  geom_point(aes(x = ppd, y = Straightness, color = ID))
 ```
  
  
